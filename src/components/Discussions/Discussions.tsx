@@ -1,76 +1,73 @@
 type Participant = {
-  initials: string;
-  color: string;
-};
+  initials: string
+  color: string
+}
 
 type Discussion = {
-  participants: Participant[];
-  show: string;
-  threadTitle: string;
-  threadType: "episode" | "show";
-  episode?: number;
-  preview: string;
-  replies: number;
-  timeAgo: string;
-};
+  participants: Participant[]
+  show: string
+  threadTitle: string
+  threadType: 'episode' | 'season' | 'show'
+  season?: number
+  episode?: number
+  preview: string
+  replies: number
+  timeAgo: string
+}
 
 const discussions: Discussion[] = [
   {
     participants: [
-      { initials: "JR", color: "#c4622d" },
-      { initials: "MK", color: "#1D9E75" },
-      { initials: "DT", color: "#7F77DD" },
+      { initials: 'JR', color: '#c4622d' },
+      { initials: 'MK', color: '#1D9E75' },
+      { initials: 'DT', color: '#7F77DD' },
     ],
-    show: "Solo Leveling S3",
-    threadTitle: "reaction thread",
-    threadType: "episode",
+    show: 'Solo Leveling S3',
+    threadTitle: 'reaction thread',
+    threadType: 'episode',
+    season: 3,
     episode: 6,
-    preview:
-      'Jordan: "Bro the animation in this episode is INSANE. Sung Jin-Woo just keeps getting more terrifying and I am here for it 🔥"',
+    preview: 'Jordan: "Bro the animation in this episode is INSANE. Sung Jin-Woo just keeps getting more terrifying and I am here for it 🔥"',
     replies: 12,
-    timeAgo: "4m ago",
+    timeAgo: '4m ago',
   },
   {
     participants: [
-      { initials: "MK", color: "#1D9E75" },
-      { initials: "DT", color: "#7F77DD" },
+      { initials: 'MK', color: '#1D9E75' },
+      { initials: 'DT', color: '#7F77DD' },
     ],
-    show: "Demon Slayer S5",
-    threadTitle: "Is this the best season yet?",
-    threadType: "show",
-    preview:
-      'Mia: "I genuinely think Ufotable outdid themselves this season. The breathing sequences have gotten so creative I had to rewatch the fight three times."',
+    show: 'Demon Slayer S5',
+    threadTitle: 'Is this the best season yet?',
+    threadType: 'season',
+    season: 5,
+    preview: 'Mia: "I genuinely think Ufotable outdid themselves this season. The breathing sequences have gotten so creative I had to rewatch the fight three times."',
     replies: 7,
-    timeAgo: "32m ago",
+    timeAgo: '32m ago',
   },
   {
-    participants: [{ initials: "AL", color: "#dcb43c" }],
-    show: "Frieren S2",
-    threadTitle: "Why this show hits different at 2am",
-    threadType: "show",
-    preview:
-      "Alex: \"There's something about Frieren that only works when it's late and quiet. Anyone else feel like this show was made for a specific emotional state?\"",
+    participants: [
+      { initials: 'AL', color: '#dcb43c' },
+    ],
+    show: 'Frieren S2',
+    threadTitle: 'Why this show hits different at 2am',
+    threadType: 'show',
+    preview: 'Alex: "There\'s something about Frieren that only works when it\'s late and quiet. Anyone else feel like this show was made for a specific emotional state?"',
     replies: 4,
-    timeAgo: "1h ago",
+    timeAgo: '1h ago',
   },
-];
+]
 
 function Discussions() {
   return (
     <div className="px-6 py-5 border-t border-white/5">
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-sm font-medium text-[#f0ede8]">
-            Active discussions in your circle
-          </h2>
-          <p className="text-[11px] text-[#9a9590] mt-0.5">
-            Threads your mutuals are already talking in
-          </p>
+          <h2 className="text-sm font-medium text-[#f0ede8]">Active discussions in your circle</h2>
+          <p className="text-[11px] text-[#9a9590] mt-0.5">Threads your mutuals are already talking in</p>
         </div>
-        <span className="text-[11px] text-[#D13924] cursor-pointer">
-          See all threads
-        </span>
+        <span className="text-[11px] text-[#D13924] cursor-pointer">See all threads</span>
       </div>
 
       {/* Discussion cards */}
@@ -82,6 +79,7 @@ function Discussions() {
           >
             {/* Top row */}
             <div className="flex items-center gap-3 mb-3">
+
               {/* Stacked avatars */}
               <div className="flex">
                 {disc.participants.map((p, j) => (
@@ -91,9 +89,9 @@ function Discussions() {
                     style={{
                       backgroundColor: `${p.color}35`,
                       color: p.color,
-                      marginLeft: j === 0 ? 0 : "-8px",
+                      marginLeft: j === 0 ? 0 : '-8px',
                       zIndex: disc.participants.length - j,
-                      position: "relative",
+                      position: 'relative',
                     }}
                   >
                     {p.initials}
@@ -105,30 +103,29 @@ function Discussions() {
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-[#9a9590]">
                   {disc.participants.length === 1
-                    ? "Started a thread about"
+                    ? 'Started a thread about'
                     : `${disc.participants.length} friends talking about`}
                 </div>
                 <div className="text-[12px] text-[#D13924] font-medium truncate">
-                  {disc.show} —{" "}
-                  {disc.threadType === "episode" ? `Ep ${disc.episode} · ` : ""}
+                  {disc.show} —{' '}
+                  {disc.threadType === 'episode' && `S${disc.season} Ep ${disc.episode} · `}
+                  {disc.threadType === 'season' && `Season ${disc.season} · `}
                   {disc.threadTitle}
                 </div>
               </div>
 
               {/* Thread type badge */}
-              <span
-                className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 ${
-                  disc.threadType === "episode"
-                    ? "bg-[#D13924]/10 text-[#D13924] border border-[#D13924]/25"
-                    : "bg-white/5 text-[#9a9590] border border-white/10"
-                }`}
-              >
-                {disc.threadType === "episode" ? "Episode" : "Show"}
+              <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
+                disc.threadType === 'episode'
+                  ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
+                  : disc.threadType === 'season'
+                  ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
+                  : 'bg-white/5 text-[#9a9590] border-white/10'
+              }`}>
+                {disc.threadType === 'episode' ? 'Episode' : disc.threadType === 'season' ? 'Season' : 'Show'}
               </span>
 
-              <span className="text-[10px] text-[#5a5650] flex-shrink-0">
-                {disc.timeAgo}
-              </span>
+              <span className="text-[10px] text-[#5a5650] flex-shrink-0">{disc.timeAgo}</span>
             </div>
 
             {/* Preview */}
@@ -139,18 +136,19 @@ function Discussions() {
             {/* Footer */}
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-[#9a9590]">
-                <span className="text-[#D13924]">{disc.replies} replies</span> ·{" "}
-                {disc.participants.length} of your friends
+                <span className="text-[#D13924]">{disc.replies} replies</span> · {disc.participants.length} of your friends
               </span>
               <button className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer">
                 Join thread ›
               </button>
             </div>
+
           </div>
         ))}
       </div>
+
     </div>
-  );
+  )
 }
 
-export default Discussions;
+export default Discussions
