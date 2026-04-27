@@ -1,79 +1,76 @@
 type Show = {
-  name: string
-  emoji: string
-  ep: number
-  isNew: boolean
-  isMatch?: boolean
-}
+  name: string;
+  emoji: string;
+  ep: number;
+  isNew: boolean;
+  isMatch?: boolean;
+};
 
 type DaySchedule = {
-  day: string
-  isToday: boolean
-  shows: Show[]
-}
+  day: string;
+  isToday: boolean;
+  shows: Show[];
+};
 
 const schedule: DaySchedule[] = [
   {
-    day: 'Mon',
+    day: "Mon",
     isToday: false,
-    shows: [
-      { name: 'Frieren S2', emoji: '🌸', ep: 3, isNew: true }
-    ]
+    shows: [{ name: "Frieren S2", emoji: "🌸", ep: 3, isNew: true }],
   },
   {
-    day: 'Tue',
+    day: "Tue",
     isToday: false,
-    shows: [
-      { name: 'Vinland Saga S3', emoji: '⚔️', ep: 7, isNew: false }
-    ]
+    shows: [{ name: "Vinland Saga S3", emoji: "⚔️", ep: 7, isNew: false }],
   },
   {
-    day: 'Wed',
+    day: "Wed",
     isToday: true,
     shows: [
-      { name: 'Solo Leveling S3', emoji: '🌙', ep: 6, isNew: true, isMatch: true },
-      { name: 'Gundam: Requiem', emoji: '🤖', ep: 2, isNew: true }
-    ]
+      {
+        name: "Solo Leveling S3",
+        emoji: "🌙",
+        ep: 6,
+        isNew: true,
+        isMatch: true,
+      },
+      { name: "Gundam: Requiem", emoji: "🤖", ep: 2, isNew: true },
+    ],
   },
   {
-    day: 'Thu',
+    day: "Thu",
     isToday: false,
-    shows: [
-      { name: 'JJK Season 3', emoji: '🔥', ep: 9, isNew: false }
-    ]
+    shows: [{ name: "JJK Season 3", emoji: "🔥", ep: 9, isNew: false }],
   },
   {
-    day: 'Fri',
+    day: "Fri",
     isToday: false,
-    shows: [
-      { name: 'Mushishi Returns', emoji: '🌿', ep: 4, isNew: true }
-    ]
+    shows: [{ name: "Mushishi Returns", emoji: "🌿", ep: 4, isNew: true }],
   },
   {
-    day: 'Sat',
+    day: "Sat",
     isToday: false,
-    shows: [
-      { name: 'One Piece', emoji: '⚡', ep: 1122, isNew: true }
-    ]
+    shows: [{ name: "One Piece", emoji: "⚡", ep: 1122, isNew: true }],
   },
   {
-    day: 'Sun',
+    day: "Sun",
     isToday: false,
-    shows: [
-      { name: 'Demon Slayer S5', emoji: '⛩', ep: 8, isNew: false }
-    ]
+    shows: [{ name: "Demon Slayer S5", emoji: "⛩", ep: 8, isNew: false }],
   },
-]
+];
 
 function Calendar() {
   return (
     <div className="px-6 py-5 border-t border-white/5">
-
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-sm font-medium text-[#f0ede8]">This week's schedule</h2>
-          <p className="text-[11px] text-[#9a9590] mt-0.5">Spring 2026 · Updated daily</p>
+          <h2 className="text-sm font-medium text-[#f0ede8]">
+            This week's schedule
+          </h2>
+          <p className="text-[11px] text-[#9a9590] mt-0.5">
+            Spring 2026 · Updated daily
+          </p>
         </div>
         <span className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/20 px-3 py-1 rounded-full">
           Spring 2026
@@ -84,11 +81,12 @@ function Calendar() {
       <div className="grid grid-cols-7 gap-2">
         {schedule.map((day) => (
           <div key={day.day} className="flex flex-col gap-1.5">
-
             {/* Day label */}
-            <div className={`text-[9px] text-center uppercase tracking-wider pb-1.5 border-b border-white/5 ${
-              day.isToday ? 'text-[#D13924]' : 'text-[#9a9590]'
-            }`}>
+            <div
+              className={`text-[9px] text-center uppercase tracking-wider pb-1.5 border-b border-white/5 ${
+                day.isToday ? "text-[#D13924]" : "text-[#9a9590]"
+              }`}
+            >
               {day.isToday ? `${day.day} · Today` : day.day}
             </div>
 
@@ -98,16 +96,20 @@ function Calendar() {
                 key={show.name}
                 className={`h-16 rounded-lg p-2 border cursor-pointer text-center transition-all hover:border-[#D13924]/40 ${
                   show.isMatch
-                    ? 'bg-[#D13924]/06 border-[#D13924]/30'
-                    : 'bg-[#1a1815] border-white/7'
+                    ? "bg-[#D13924]/06 border-[#D13924]/30"
+                    : "bg-[#1a1815] border-white/7"
                 }`}
               >
                 <div className="text-base mb-1">{show.emoji}</div>
-                <div className="text-[9px] text-[#c8c4be] leading-tight truncate">{show.name}</div>
-                <div className="text-[8px] text-[#9a9590] mt-0.5">Ep {show.ep}</div>
-                {show.isNew && (
+                <div className="text-[9px] text-[#c8c4be] leading-tight truncate">
+                  {show.name}
+                </div>
+                <div className="text-[8px] text-[#9a9590] mt-0.5">
+                  Ep {show.ep}
+                </div>
+                {/* {show.isNew && (
                   <div className="w-1.5 h-1.5 rounded-full bg-[#D13924] mx-auto mt-1" />
-                )}
+                )} */}
               </div>
             ))}
 
@@ -115,7 +117,6 @@ function Calendar() {
             {day.shows.length < 2 && (
               <div className="h-16 rounded-lg border border-dashed border-white/5 bg-white/[0.02]" />
             )}
-
           </div>
         ))}
       </div>
@@ -126,9 +127,8 @@ function Calendar() {
           View full season schedule ›
         </span>
       </div>
-
     </div>
-  )
+  );
 }
 
-export default Calendar
+export default Calendar;
