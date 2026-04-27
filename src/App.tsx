@@ -1,6 +1,7 @@
 import Nav from './components/Nav/Nav'
 import Hero from './components/Hero/Hero'
 import Ticker from './components/Ticker/Ticker'
+import Calendar from './components/Calendar/Calendar'
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Nav />
       <Hero />
       <Ticker />
+      <Calendar />
     </div>
   )
 }
