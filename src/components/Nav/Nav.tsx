@@ -1,4 +1,7 @@
 function Nav() {
+  const user = localStorage.getItem('user') || sessionStorage.getItem('user')
+  const parsedUser = user ? JSON.parse(user) : null
+
   return (
     <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10 sticky top-0 bg-[#0f0e0d]/95 backdrop-blur-md z-50">
 
@@ -30,13 +33,41 @@ function Nav() {
         </button>
       </div>
 
-      {/* Join Button */}
-      <button
-        className="text-white text-sm font-medium px-4 py-2 rounded-full cursor-pointer hover:opacity-90 transition-all"
-        style={{ backgroundColor: '#D13924' }}
-      >
-        Join Queued
-      </button>
+      {/* Auth section */}
+      {parsedUser ? (
+        <div className="flex items-center gap-6">
+          <span className="text-[#f0ede8] text-md">{parsedUser.username}</span>
+          <button
+            onClick={() => {
+              localStorage.removeItem('token')
+              localStorage.removeItem('user')
+              sessionStorage.removeItem('token')
+              sessionStorage.removeItem('user')
+              window.location.href = '/login'
+            }}
+            className="text-white text-sm font-medium px-4 py-2 rounded-full cursor-pointer hover:opacity-90 transition-all"
+            style={{ backgroundColor: '#D13924' }}
+          >
+            Log out
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="text-[#f0ede8] text-sm cursor-pointer hover:text-[#D13924] transition-all"
+          >
+            Sign in
+          </button>
+          <button
+            onClick={() => window.location.href = '/register'}
+            className="text-white text-sm font-medium px-4 py-2 rounded-full cursor-pointer hover:opacity-90 transition-all"
+            style={{ backgroundColor: '#D13924' }}
+          >
+            Join Queued
+          </button>
+        </div>
+      )}
 
     </nav>
   )
