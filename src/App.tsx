@@ -1,11 +1,14 @@
-import Nav from './components/Nav/Nav'
-import Hero from './components/Hero/Hero'
-import Ticker from './components/Ticker/Ticker'
-import Calendar from './components/Calendar/Calendar'
-import Friends from './components/Friends/Friends'
-import Discussions from './components/Discussions/Discussions'
-import Liked from './components/Liked/Liked'
-function App() {
+import { Routes, Route } from "react-router-dom";
+import Nav from "./components/Nav/Nav";
+import Hero from "./components/Hero/Hero";
+import Ticker from "./components/Ticker/Ticker";
+import Calendar from "./components/Calendar/Calendar";
+import Friends from "./components/Friends/Friends";
+import Discussions from "./components/Discussions/Discussions";
+import Liked from "./components/Liked/Liked";
+import Login from "./pages/Login";
+
+function HomePage() {
   return (
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
@@ -16,7 +19,16 @@ function App() {
       <Discussions />
       <Liked />
     </div>
-  )
+  );
 }
 
-export default App
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
+  );
+}
+
+export default App;
