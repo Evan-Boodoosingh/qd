@@ -96,7 +96,7 @@ function Nav() {
         <div className="flex items-center gap-5">
           <button
             onClick={() => window.location.href = '/login'}
-            className="text-[#f0ede8] text-sm cursor-pointer hover:text-[#D13924] transition-all"
+            className="text-[#f0ede8] text-md cursor-pointer hover:text-[#D13924] transition-all"
           >
             Sign in
           </button>
