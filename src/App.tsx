@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Landing from './pages/Landing'
 import Trending from "./components/Trending/Trending";
+import PopularDiscussions from "./components/PopularDiscussions/PopularDiscussions";
 
 function HomePage() {
   return (
@@ -23,6 +24,7 @@ function HomePage() {
       <Discussions />
       <Liked />
       <Trending />
+      <PopularDiscussions />
     </div>
   );
 }

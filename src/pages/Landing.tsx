@@ -4,6 +4,7 @@ import Hero from '../components/Hero/Hero'
 import Ticker from '../components/Ticker/Ticker'
 import Calendar from '../components/Calendar/Calendar'
 import Trending from '../components/Trending/Trending'
+import PopularDiscussions from '../components/PopularDiscussions/PopularDiscussions'
 
 function Landing() {
   useEffect(() => {
@@ -20,6 +21,7 @@ function Landing() {
       <Ticker />
       <Calendar />
       <Trending />
+      <PopularDiscussions />
 
       {/* Trending Shows — coming next */}
 
