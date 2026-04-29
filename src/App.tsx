@@ -13,6 +13,7 @@ import Landing from './pages/Landing'
 import Trending from "./components/Trending/Trending"
 import PopularDiscussions from "./components/PopularDiscussions/PopularDiscussions"
 import MyList from "./pages/MyList"
+import Profile from "./pages/Profile"
 
 function HomePage() {
   return (
@@ -49,6 +50,14 @@ function App() {
         element={
           <ProtectedRoute>
             <MyList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile/:username"
+        element={
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         }
       />
