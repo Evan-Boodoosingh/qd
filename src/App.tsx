@@ -1,17 +1,18 @@
-import { Routes, Route } from "react-router-dom";
-import Nav from "./components/Nav/Nav";
-import Hero from "./components/Hero/Hero";
-import Ticker from "./components/Ticker/Ticker";
-import Calendar from "./components/Calendar/Calendar";
-import Friends from "./components/Friends/Friends";
-import Discussions from "./components/Discussions/Discussions";
-import Liked from "./components/Liked/Liked";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { Routes, Route } from "react-router-dom"
+import Nav from "./components/Nav/Nav"
+import Hero from "./components/Hero/Hero"
+import Ticker from "./components/Ticker/Ticker"
+import Calendar from "./components/Calendar/Calendar"
+import Friends from "./components/Friends/Friends"
+import Discussions from "./components/Discussions/Discussions"
+import Liked from "./components/Liked/Liked"
+import Login from "./pages/Login"
+import Register from "./pages/Register"
+import ProtectedRoute from "./components/ProtectedRoute"
 import Landing from './pages/Landing'
-import Trending from "./components/Trending/Trending";
-import PopularDiscussions from "./components/PopularDiscussions/PopularDiscussions";
+import Trending from "./components/Trending/Trending"
+import PopularDiscussions from "./components/PopularDiscussions/PopularDiscussions"
+import MyList from "./pages/MyList"
 
 function HomePage() {
   return (
@@ -26,7 +27,7 @@ function HomePage() {
       <Trending />
       <PopularDiscussions />
     </div>
-  );
+  )
 }
 
 function App() {
@@ -43,8 +44,16 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/my-list"
+        element={
+          <ProtectedRoute>
+            <MyList />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
-  );
+  )
 }
 
-export default App;
+export default App
