@@ -1,6 +1,11 @@
+import { useLocation } from 'react-router-dom'
+
 function Nav() {
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const parsedUser = user ? JSON.parse(user) : null
+  const location = useLocation()
+
+  const isActive = (path: string) => location.pathname === path
 
   return (
     <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10 sticky top-0 bg-[#0f0e0d]/95 backdrop-blur-md z-50">
@@ -18,35 +23,45 @@ function Nav() {
         <button
           type="button"
           onClick={() => window.location.href = '/home'}
-          className="text-[#D13924] text-sm cursor-pointer transition hover:text-[#f0ede8]"
+          className={`text-md cursor-pointer transition ${
+            isActive('/home') || isActive('/') ? 'text-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8]'
+          }`}
         >
           Home
         </button>
         <button
           type="button"
           onClick={() => window.location.href = '/schedule'}
-          className="text-[#9a9590] text-sm cursor-pointer transition hover:text-[#f0ede8]"
+          className={`text-md cursor-pointer transition ${
+            isActive('/schedule') ? 'text-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8]'
+          }`}
         >
           Schedule
         </button>
         <button
           type="button"
           onClick={() => window.location.href = '/community'}
-          className="text-[#9a9590] text-sm cursor-pointer transition hover:text-[#f0ede8]"
+          className={`text-md cursor-pointer transition ${
+            isActive('/community') ? 'text-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8]'
+          }`}
         >
           Community
         </button>
         <button
           type="button"
           onClick={() => window.location.href = '/my-list'}
-          className="text-[#9a9590] text-sm cursor-pointer transition hover:text-[#f0ede8]"
+          className={`text-md cursor-pointer transition ${
+            isActive('/my-list') ? 'text-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8]'
+          }`}
         >
           My List
         </button>
         <button
           type="button"
           onClick={() => window.location.href = '/friends'}
-          className="text-[#9a9590] text-sm cursor-pointer transition hover:text-[#f0ede8]"
+          className={`text-md cursor-pointer transition ${
+            isActive('/friends') ? 'text-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8]'
+          }`}
         >
           Friends
         </button>
@@ -56,7 +71,9 @@ function Nav() {
       {parsedUser ? (
         <div className="flex items-center gap-5">
           <span
-            className="text-[#f0ede8] text-md cursor-pointer hover:text-[#D13924] transition-all"
+            className={`text-md cursor-pointer transition-all ${
+              location.pathname.startsWith('/profile') ? 'text-[#D13924]' : 'text-[#f0ede8] hover:text-[#D13924]'
+            }`}
             onClick={() => window.location.href = `/profile/${parsedUser.username}`}
           >
             {parsedUser.username}
@@ -79,7 +96,7 @@ function Nav() {
         <div className="flex items-center gap-5">
           <button
             onClick={() => window.location.href = '/login'}
-            className="text-[#f0ede8] text-md cursor-pointer hover:text-[#D13924] transition-all"
+            className="text-[#f0ede8] text-sm cursor-pointer hover:text-[#D13924] transition-all"
           >
             Sign in
           </button>
