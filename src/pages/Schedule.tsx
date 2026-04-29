@@ -217,11 +217,11 @@ function Schedule() {
                 }`}>
                   {day.slice(0, 3)}
                 </div>
-                {isLoggedIn && hasShows && (
-                  <div className="flex items-center justify-center">
-                    <div className={`w-1.5 h-1.5 rounded-full ${hasNew ? 'bg-[#D13924]' : 'bg-white/20'}`} />
-                  </div>
-                )}
+                {isLoggedIn && hasNew && (
+  <div className="flex items-center justify-center">
+    <div className="w-1.5 h-1.5 rounded-full bg-[#D13924]" />
+  </div>
+)}
               </button>
             )
           })}
