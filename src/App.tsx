@@ -9,6 +9,8 @@ import Liked from "./components/Liked/Liked";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Landing from './pages/Landing'
+import Trending from "./components/Trending/Trending";
 
 function HomePage() {
   return (
@@ -20,6 +22,7 @@ function HomePage() {
       <Friends />
       <Discussions />
       <Liked />
+      <Trending />
     </div>
   );
 }
@@ -27,7 +30,7 @@ function HomePage() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route
