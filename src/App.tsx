@@ -14,6 +14,8 @@ import Trending from "./components/Trending/Trending"
 import PopularDiscussions from "./components/PopularDiscussions/PopularDiscussions"
 import MyList from "./pages/MyList"
 import Profile from "./pages/Profile"
+import FriendsPage from "./pages/Friends"
+import Schedule from "./pages/Schedule"
 
 function HomePage() {
   return (
@@ -37,6 +39,7 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/schedule" element={<Schedule />} />
       <Route
         path="/home"
         element={
@@ -61,7 +64,16 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <FriendsPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
+
   )
 }
 
