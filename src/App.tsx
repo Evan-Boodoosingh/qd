@@ -16,6 +16,7 @@ import MyList from "./pages/MyList"
 import Profile from "./pages/Profile"
 import FriendsPage from "./pages/Friends"
 import Schedule from "./pages/Schedule"
+import Community from "./pages/Community"
 
 function HomePage() {
   return (
@@ -40,6 +41,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/schedule" element={<Schedule />} />
+      <Route path="/community" element={<Community />} />
       <Route
         path="/home"
         element={
