@@ -200,7 +200,6 @@ function Schedule() {
         {/* Day selector */}
         <div className="grid grid-cols-7 gap-2 mb-8">
           {days.map((day) => {
-            const hasShows = filteredShows.some((s) => s.day === day)
             const hasNew = filteredShows.some((s) => s.day === day && s.isNew)
             return (
               <button
@@ -218,10 +217,10 @@ function Schedule() {
                   {day.slice(0, 3)}
                 </div>
                 {isLoggedIn && hasNew && (
-  <div className="flex items-center justify-center">
-    <div className="w-1.5 h-1.5 rounded-full bg-[#D13924]" />
-  </div>
-)}
+                  <div className="flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#D13924]" />
+                  </div>
+                )}
               </button>
             )
           })}
@@ -285,7 +284,7 @@ function Schedule() {
                   </div>
 
                   {/* Platform + rating */}
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-[10px] text-[#D13924] bg-[#D13924]/10 px-2 py-0.5 rounded">{show.platform}</span>
                     <span className="text-[10px] text-[#9a9590]">♥ {show.rating}</span>
                   </div>
