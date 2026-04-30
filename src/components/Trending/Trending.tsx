@@ -1,116 +1,109 @@
-type TrendingShow = {
-  name: string
-  emoji: string
-  rating: number
-  likes: number
-  genre: string
-  platform: string
-  synopsis: string
-}
+import { useState, useEffect } from "react";
+import { fetchCurrentSeason, proxyImage } from "../../services/anime";
 
-const trendingShows: TrendingShow[] = [
-  {
-    name: 'Solo Leveling S3',
-    emoji: '🌙',
-    rating: 9.2,
-    likes: 14200,
-    genre: 'Action · Fantasy',
-    platform: 'Prime Video',
-    synopsis: 'Sung Jin-Woo continues his ascent as the world\'s most powerful hunter, facing threats that transcend human understanding.',
-  },
-  {
-    name: 'Frieren S2',
-    emoji: '🌸',
-    rating: 9.6,
-    likes: 18900,
-    genre: 'Fantasy · Slice of life',
-    platform: 'Crunchyroll',
-    synopsis: 'The elven mage Frieren continues her journey, reflecting on the passage of time and the bonds she forms along the way.',
-  },
-  {
-    name: 'Demon Slayer S5',
-    emoji: '⛩',
-    rating: 9.1,
-    likes: 21300,
-    genre: 'Action · Supernatural',
-    platform: 'Crunchyroll',
-    synopsis: 'Tanjiro and his allies face their most powerful demons yet in breathtaking battles animated by Ufotable.',
-  },
-  {
-    name: 'Vinland Saga S3',
-    emoji: '⚔️',
-    rating: 9.4,
-    likes: 11800,
-    genre: 'Historical · Drama',
-    platform: 'Netflix',
-    synopsis: 'Thorfinn\'s journey toward a land of peace continues as he grapples with his violent past and searches for redemption.',
-  },
-  {
-    name: 'JJK Season 3',
-    emoji: '🔥',
-    rating: 8.9,
-    likes: 19400,
-    genre: 'Action · Dark fantasy',
-    platform: 'Crunchyroll',
-    synopsis: 'Yuji Itadori and his allies face the consequences of the Culling Game in the most intense season yet.',
-  },
-  {
-    name: 'Mushishi Returns',
-    emoji: '🌿',
-    rating: 9.5,
-    likes: 8700,
-    genre: 'Mystery · Slice of life',
-    platform: 'HiDive',
-    synopsis: 'Ginko travels through a mystical Japan encountering mushi — ancient life forms that blur the line between the natural and supernatural.',
-  },
-]
+type Show = {
+  id: number;
+  title: string;
+  image: string | null;
+  score: number;
+  genres: string[];
+  synopsis: string;
+  studio: string;
+};
 
 function Trending() {
+  const [shows, setShows] = useState<Show[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCurrentSeason()
+      .then((data) => {
+        const top = data
+          .filter((s: Show) => s.image && s.score > 0)
+          .sort((a: Show, b: Show) => b.score - a.score)
+          .filter(
+            (s: Show, index: number, self: Show[]) =>
+              index === self.findIndex((t) => t.id === s.id),
+          )
+          .slice(0, 6);
+        setShows(top);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="px-6 py-5 border-t border-white/5">
+        <div className="text-[#9a9590] text-sm animate-pulse">
+          Loading trending...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-6 py-5 border-t border-white/5">
-
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-sm font-medium text-[#f0ede8]">Trending this season</h2>
-          <p className="text-[11px] text-[#9a9590] mt-0.5">Most watched and loved by the community</p>
+          <h2 className="text-sm font-medium text-[#f0ede8]">
+            Trending this season
+          </h2>
+          <p className="text-[11px] text-[#9a9590] mt-0.5">
+            Most watched and loved by the community
+          </p>
         </div>
-        <span className="text-[11px] text-[#D13924] cursor-pointer">See all</span>
+        <span className="text-[11px] text-[#D13924] cursor-pointer">
+          See all
+        </span>
       </div>
 
       {/* Grid */}
       <div className="grid grid-cols-6 gap-4">
-        {trendingShows.map((show, index) => (
+        {shows.map((show, index) => (
           <div
-            key={show.name}
+            key={show.id}
             className="bg-[#1a1815] border border-white/7 rounded-xl overflow-hidden cursor-pointer hover:border-[#D13924]/30 transition-all"
           >
-            {/* Rank + Thumbnail */}
-            <div className="relative h-[90px] bg-[#0f0e0d] flex items-center justify-center">
-              <span className="text-3xl">{show.emoji}</span>
+            {/* Poster */}
+            <div className="relative h-[160px] overflow-hidden">
+              <img
+                src={proxyImage(show.image)}
+                alt={show.title}
+                className="w-full h-full object-cover"
+              />
               <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-[#D13924] flex items-center justify-center">
-                <span className="text-[9px] font-semibold text-white">#{index + 1}</span>
+                <span className="text-[9px] font-semibold text-white">
+                  #{index + 1}
+                </span>
               </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1a1815] to-transparent opacity-60" />
             </div>
 
             {/* Info */}
             <div className="p-3">
-              <div className="text-[11px] font-medium text-[#f0ede8] truncate mb-1">{show.name}</div>
-              <div className="text-[9px] text-[#9a9590] truncate mb-1">{show.genre}</div>
-              <div className="text-[9px] text-[#9a9590] line-clamp-2 mb-2 leading-relaxed">{show.synopsis}</div>
+              <div className="text-[11px] font-medium text-[#f0ede8] truncate mb-1">
+                {show.title}
+              </div>
+              <div className="text-[9px] text-[#9a9590] truncate mb-2">
+                {show.genres.slice(0, 2).join(" · ")}
+              </div>
+              <div className="text-[9px] text-[#9a9590] line-clamp-2 mb-2 leading-relaxed">
+                {show.synopsis}
+              </div>
               <div className="flex items-center justify-between">
-                <span className="text-[9px] text-[#D13924] bg-[#D13924]/10 px-1.5 py-0.5 rounded truncate">
-                  {show.platform}
+                <span className="text-[9px] text-[#9a9590]">{show.studio}</span>
+                <span className="text-[9px] text-[#D13924]">
+                  ♥ {show.score}
                 </span>
-                <span className="text-[9px] text-[#9a9590]">♥ {show.rating}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
-
     </div>
-  )
+  );
 }
 
-export default Trending
+export default Trending;
