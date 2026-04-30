@@ -17,6 +17,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/users", require("./routes/users"));
+app.use('/api/anime', require('./routes/anime'))
 
 // Connect to MongoDB and start server
 mongoose
