@@ -4,6 +4,7 @@ type Participant = {
 }
 
 type Discussion = {
+  id: string
   participants: Participant[]
   show: string
   threadTitle: string
@@ -17,6 +18,7 @@ type Discussion = {
 
 const discussions: Discussion[] = [
   {
+    id: '1',
     participants: [
       { initials: 'JR', color: '#c4622d' },
       { initials: 'MK', color: '#1D9E75' },
@@ -32,6 +34,7 @@ const discussions: Discussion[] = [
     timeAgo: '4m ago',
   },
   {
+    id: '2',
     participants: [
       { initials: 'MK', color: '#1D9E75' },
       { initials: 'DT', color: '#7F77DD' },
@@ -45,6 +48,7 @@ const discussions: Discussion[] = [
     timeAgo: '32m ago',
   },
   {
+    id: '3',
     participants: [
       { initials: 'AL', color: '#dcb43c' },
     ],
@@ -61,26 +65,27 @@ function Discussions() {
   return (
     <div className="px-6 py-5 border-t border-white/5">
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-sm font-medium text-[#f0ede8]">Active discussions in your circle</h2>
           <p className="text-[11px] text-[#9a9590] mt-0.5">Threads your mutuals are already talking in</p>
         </div>
-        <span className="text-[11px] text-[#D13924] cursor-pointer">See all threads</span>
+        <span
+          onClick={() => window.location.href = '/community'}
+          className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
+        >
+          See all threads
+        </span>
       </div>
 
-      {/* Discussion cards */}
       <div className="flex flex-col gap-3">
-        {discussions.map((disc, i) => (
+        {discussions.map((disc) => (
           <div
-            key={i}
+            key={disc.id}
+            onClick={() => window.location.href = `/thread/${disc.id}`}
             className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
           >
-            {/* Top row */}
             <div className="flex items-center gap-3 mb-3">
-
-              {/* Stacked avatars */}
               <div className="flex">
                 {disc.participants.map((p, j) => (
                   <div
@@ -99,7 +104,6 @@ function Discussions() {
                 ))}
               </div>
 
-              {/* Show + thread title */}
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-[#9a9590]">
                   {disc.participants.length === 1
@@ -114,7 +118,6 @@ function Discussions() {
                 </div>
               </div>
 
-              {/* Thread type badge */}
               <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
                 disc.threadType === 'episode'
                   ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
@@ -128,21 +131,24 @@ function Discussions() {
               <span className="text-[10px] text-[#5a5650] flex-shrink-0">{disc.timeAgo}</span>
             </div>
 
-            {/* Preview */}
             <div className="text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2">
               {disc.preview}
             </div>
 
-            {/* Footer */}
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-[#9a9590]">
                 <span className="text-[#D13924]">{disc.replies} replies</span> · {disc.participants.length} of your friends
               </span>
-              <button className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  window.location.href = `/thread/${disc.id}`
+                }}
+                className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
+              >
                 Join thread ›
               </button>
             </div>
-
           </div>
         ))}
       </div>

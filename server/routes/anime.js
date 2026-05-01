@@ -3,21 +3,21 @@ const router = express.Router()
 
 let cachedSeason = null
 let cacheTime = null
-const CACHE_DURATION = 60 * 60 * 1000 // 1 hour in milliseconds
+const CACHE_DURATION = 60 * 60 * 1000
 
-// GET /api/anime/season — current season
+const episodeCache = {}
+const EPISODE_CACHE_DURATION = 60 * 60 * 1000
+
+// GET /api/anime/season
 router.get('/season', async (req, res) => {
   try {
-    // Return cached data if it's still fresh
     if (cachedSeason && cacheTime && Date.now() - cacheTime < CACHE_DURATION) {
       return res.json(cachedSeason)
     }
 
-    // Fetch from Jikan
     const response = await fetch('https://api.jikan.moe/v4/seasons/now?limit=25')
     const data = await response.json()
 
-    // Transform the data into a cleaner shape for our frontend
     const shows = data.data.map((show) => ({
       id: show.mal_id,
       title: show.title_english || show.title,
@@ -37,68 +37,111 @@ router.get('/season', async (req, res) => {
       url: show.url,
     }))
 
-    // Cache the result
     cachedSeason = { shows, fetchedAt: new Date().toISOString() }
     cacheTime = Date.now()
 
     res.json(cachedSeason)
-
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch season data', error: err.message })
   }
 })
 
-// GET /api/anime/show/:id — individual show
+// GET /api/anime/show/:id
 router.get('/show/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    const [showRes, episodesRes] = await Promise.all([
-      fetch(`https://api.jikan.moe/v4/anime/${id}/full`),
-      fetch(`https://api.jikan.moe/v4/anime/${id}/episodes`),
-    ])
-
+    const showRes = await fetch(`https://api.jikan.moe/v4/anime/${id}/full`)
     const showData = await showRes.json()
-    const episodesData = await episodesRes.json()
+
+    if (!showData.data) {
+      return res.status(404).json({ message: 'Show not found' })
+    }
 
     const show = showData.data
-    const episodes = episodesData.data || []
+
+    // Episodes with caching
+    let episodes = []
+    try {
+      const now = Date.now()
+      if (episodeCache[id] && now - episodeCache[id].time < EPISODE_CACHE_DURATION) {
+        episodes = episodeCache[id].data
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const episodesRes = await fetch(`https://api.jikan.moe/v4/anime/${id}/episodes`)
+        const episodesData = await episodesRes.json()
+        episodes = episodesData.data || []
+        if (episodes.length > 0) {
+          episodeCache[id] = { data: episodes, time: now }
+        }
+      }
+    } catch {
+      episodes = []
+    }
 
     res.json({
       id: show.mal_id,
       title: show.title_english || show.title,
+      titleJapanese: show.title_japanese || null,
       image: show.images?.jpg?.large_image_url || null,
       score: show.score || 0,
+      rank: show.rank || null,
+      popularity: show.popularity || null,
+      members: show.members || null,
+      favorites: show.favorites || null,
       communityScore: show.score || 0,
       genres: show.genres?.map((g) => g.name) || [],
       themes: show.themes?.map((t) => t.name) || [],
+      demographics: show.demographics?.map((d) => d.name) || [],
       synopsis: show.synopsis || '',
       trailer: show.trailer?.embed_url || null,
       studio: show.studios?.[0]?.name || 'Unknown',
+      source: show.source || null,
+      duration: show.duration || null,
+      rating: show.rating || null,
       episodes: show.episodes || null,
-      totalSeasons: 1,
-      status: show.status,
-      airing: show.airing,
+      status: show.status || 'Unknown',
+      airing: show.airing || false,
+      airedFrom: show.aired?.from || null,
+      airedTo: show.aired?.to || null,
       day: show.broadcast?.day || null,
       time: show.broadcast?.time || null,
-      season: show.season,
-      year: show.year,
+      season: show.season || 'Unknown',
+      year: show.year || null,
       url: show.url,
+      related: show.relations?.map((r) => ({
+        relation: r.relation,
+        entries: r.entry?.map((e) => ({
+          id: e.mal_id,
+          title: e.name,
+          type: e.type,
+          url: e.url,
+        })) || [],
+      })) || [],
+      streaming: show.streaming?.map((s) => ({
+        name: s.name,
+        url: s.url,
+      })) || [],
+      external: show.external?.map((e) => ({
+        name: e.name,
+        url: e.url,
+      })) || [],
+      openingThemes: show.theme?.openings || [],
+      endingThemes: show.theme?.endings || [],
       episodeList: episodes.map((ep) => ({
         number: ep.mal_id,
         title: ep.title || `Episode ${ep.mal_id}`,
         airDate: ep.aired || null,
-        filler: ep.filler,
-        recap: ep.recap,
+        filler: ep.filler || false,
+        recap: ep.recap || false,
       })),
     })
-
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch show data', error: err.message })
   }
 })
 
-// GET /api/anime/search?q=query — search
+// GET /api/anime/search
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query
@@ -119,13 +162,12 @@ router.get('/search', async (req, res) => {
     }))
 
     res.json({ results })
-
   } catch (err) {
     res.status(500).json({ message: 'Search failed', error: err.message })
   }
 })
 
-// GET /api/anime/image?url=... — image proxy
+// GET /api/anime/image — image proxy
 router.get('/image', async (req, res) => {
   try {
     const { url } = req.query
@@ -140,7 +182,6 @@ router.get('/image', async (req, res) => {
     res.setHeader('Content-Type', contentType)
     res.setHeader('Cache-Control', 'public, max-age=86400')
     res.send(Buffer.from(buffer))
-
   } catch (err) {
     res.status(500).json({ message: 'Image proxy failed', error: err.message })
   }

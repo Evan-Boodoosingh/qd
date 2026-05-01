@@ -1,4 +1,5 @@
 type PopularDiscussion = {
+  id: string
   show: string
   threadTitle: string
   threadType: 'episode' | 'season' | 'show'
@@ -13,6 +14,7 @@ type PopularDiscussion = {
 
 const discussions: PopularDiscussion[] = [
   {
+    id: '1',
     show: 'Frieren S2',
     threadTitle: 'The writing in this show is on another level',
     threadType: 'show',
@@ -23,6 +25,7 @@ const discussions: PopularDiscussion[] = [
     totalParticipants: 412,
   },
   {
+    id: '2',
     show: 'Solo Leveling S3',
     threadTitle: 'Ep 6 had the best animation of the entire season',
     threadType: 'episode',
@@ -35,6 +38,7 @@ const discussions: PopularDiscussion[] = [
     totalParticipants: 891,
   },
   {
+    id: '3',
     show: 'Demon Slayer S5',
     threadTitle: 'Is this the best season Ufotable has ever produced?',
     threadType: 'season',
@@ -53,23 +57,26 @@ function PopularDiscussions() {
   return (
     <div className="px-6 py-5 border-t border-white/5">
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-sm font-medium text-[#f0ede8]">Popular discussions</h2>
           <p className="text-[11px] text-[#9a9590] mt-0.5">What the community is talking about right now</p>
         </div>
-        <span className="text-[11px] text-[#D13924] cursor-pointer">See all threads</span>
+        <span
+          onClick={() => window.location.href = '/community'}
+          className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
+        >
+          See all threads
+        </span>
       </div>
 
-      {/* Discussion cards */}
       <div className="flex flex-col gap-3">
-        {discussions.map((disc, i) => (
+        {discussions.map((disc) => (
           <div
-            key={i}
+            key={disc.id}
+            onClick={() => window.location.href = `/thread/${disc.id}`}
             className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
           >
-            {/* Top row */}
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] text-[#9a9590]">Discussion about</div>
@@ -81,7 +88,6 @@ function PopularDiscussions() {
                 </div>
               </div>
 
-              {/* Thread type badge */}
               <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
                 disc.threadType === 'episode'
                   ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
@@ -95,12 +101,10 @@ function PopularDiscussions() {
               <span className="text-[10px] text-[#5a5650] flex-shrink-0">{disc.timeAgo}</span>
             </div>
 
-            {/* Preview */}
             <div className="text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2">
               {disc.preview}
             </div>
 
-            {/* Footer */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <span className="text-[11px] text-[#9a9590]">
@@ -115,12 +119,21 @@ function PopularDiscussions() {
               </div>
 
               {user ? (
-                <button className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    window.location.href = `/thread/${disc.id}`
+                  }}
+                  className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
+                >
                   Join thread ›
                 </button>
               ) : (
                 <button
-                  onClick={() => window.location.href = '/register'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    window.location.href = '/register'
+                  }}
                   className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
                 >
                   Sign up to reply ›

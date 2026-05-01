@@ -2,7 +2,6 @@ import { useState } from 'react'
 import Nav from '../components/Nav/Nav'
 
 type ThreadType = 'episode' | 'season' | 'show'
-
 type SortType = 'mostActive' | 'newest' | 'mostLiked'
 
 type Thread = {
@@ -161,6 +160,7 @@ function Community() {
           </div>
           {isLoggedIn && (
             <button
+              onClick={() => window.location.href = '/community/new'}
               className="text-[13px] text-white font-medium px-5 py-2 rounded-full cursor-pointer hover:opacity-90 transition-all"
               style={{ backgroundColor: '#D13924' }}
             >
@@ -169,10 +169,8 @@ function Community() {
           )}
         </div>
 
-        {/* Filters row */}
+        {/* Filters */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
-
-          {/* Sort */}
           <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
             {([
               { label: 'Most Active', value: 'mostActive' },
@@ -192,7 +190,6 @@ function Community() {
             ))}
           </div>
 
-          {/* Thread type filter */}
           <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
             {([
               { label: 'All', value: 'all' },
@@ -213,7 +210,6 @@ function Community() {
             ))}
           </div>
 
-          {/* Genre filter */}
           <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1 flex-wrap">
             {genres.map((g) => (
               <button
@@ -228,7 +224,6 @@ function Community() {
               </button>
             ))}
           </div>
-
         </div>
 
         {/* Thread count */}
@@ -247,6 +242,7 @@ function Community() {
             return (
               <div
                 key={thread.id}
+                onClick={() => window.location.href = `/thread/${thread.id}`}
                 className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
               >
                 {/* Top row */}
@@ -260,8 +256,6 @@ function Community() {
                     </div>
                     <div className="text-[13px] font-medium text-[#f0ede8] truncate">{thread.threadTitle}</div>
                   </div>
-
-                  {/* Badges */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {spoiler && (
                       <span className="text-[9px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 px-2 py-0.5 rounded-full">
@@ -281,7 +275,7 @@ function Community() {
                   </div>
                 </div>
 
-                {/* Preview — blurred if spoiler and not revealed */}
+                {/* Preview */}
                 <div className="relative mb-3">
                   <div className={`text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 line-clamp-2 transition-all ${
                     spoiler && !revealed ? 'blur-sm select-none' : ''
@@ -318,7 +312,6 @@ function Community() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {/* Spoiler report button */}
                     {isLoggedIn && !alreadyReported && !thread.hasSpoiler && (
                       <button
                         onClick={(e) => {
@@ -333,10 +326,14 @@ function Community() {
                     {alreadyReported && (
                       <span className="text-[10px] text-[#5a5650]">Spoiler flagged</span>
                     )}
-
-                    {/* Join or sign up */}
                     {isLoggedIn ? (
-                      <button className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          window.location.href = `/thread/${thread.id}`
+                        }}
+                        className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
+                      >
                         Join thread ›
                       </button>
                     ) : (
@@ -356,7 +353,6 @@ function Community() {
             )
           })}
         </div>
-
       </div>
     </div>
   )
