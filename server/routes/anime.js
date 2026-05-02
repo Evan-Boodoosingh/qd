@@ -11,6 +11,10 @@ const EPISODE_CACHE_DURATION = 60 * 60 * 1000
 const episodeDetailCache = {}
 const EPISODE_DETAIL_CACHE_DURATION = 60 * 60 * 1000
 
+const jikanFetch = (url) => fetch(url, {
+  headers: { 'User-Agent': 'Queued/1.0' }
+})
+
 // GET /api/anime/season
 router.get('/season', async (req, res) => {
   try {
@@ -18,7 +22,7 @@ router.get('/season', async (req, res) => {
       return res.json(cachedSeason)
     }
 
-    const response = await fetch('https://api.jikan.moe/v4/seasons/now?limit=25')
+    const response = await jikanFetch('https://api.jikan.moe/v4/seasons/now?limit=25')
     const data = await response.json()
 
     const shows = data.data.map((show) => ({
@@ -45,6 +49,7 @@ router.get('/season', async (req, res) => {
 
     res.json(cachedSeason)
   } catch (err) {
+    console.error('SEASON ERROR:', err)
     res.status(500).json({ message: 'Failed to fetch season data', error: err.message })
   }
 })
@@ -54,7 +59,7 @@ router.get('/show/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    const showRes = await fetch(`https://api.jikan.moe/v4/anime/${id}/full`)
+    const showRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/full`)
     const showData = await showRes.json()
 
     if (!showData.data) {
@@ -70,7 +75,7 @@ router.get('/show/:id', async (req, res) => {
         episodes = episodeCache[id].data
       } else {
         await new Promise(resolve => setTimeout(resolve, 500))
-        const episodesRes = await fetch(`https://api.jikan.moe/v4/anime/${id}/episodes`)
+        const episodesRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes`)
         const episodesData = await episodesRes.json()
         episodes = episodesData.data || []
         if (episodes.length > 0) {
@@ -139,6 +144,7 @@ router.get('/show/:id', async (req, res) => {
       })),
     })
   } catch (err) {
+    console.error('SHOW ERROR:', err)
     res.status(500).json({ message: 'Failed to fetch show data', error: err.message })
   }
 })
@@ -159,11 +165,10 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 1000))
 
-    const response = await fetch(`https://api.jikan.moe/v4/anime/${id}/episodes/${ep}`)
+    const response = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes/${ep}`)
     const data = await response.json()
 
     if (!data.data) {
-      // Cache the miss too so we don't keep hitting Jikan for missing episodes
       episodeDetailCache[cacheKey] = {
         data: {
           number: parseInt(ep),
@@ -197,6 +202,7 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
 
     res.json(result)
   } catch (err) {
+    console.error('EPISODE ERROR:', err)
     res.status(500).json({ message: 'Failed to fetch episode data', error: err.message })
   }
 })
@@ -207,7 +213,7 @@ router.get('/search', async (req, res) => {
     const { q } = req.query
     if (!q) return res.status(400).json({ message: 'Query required' })
 
-    const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10&type=tv`)
+    const response = await jikanFetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10&type=tv`)
     const data = await response.json()
 
     const results = data.data.map((show) => ({
@@ -223,6 +229,7 @@ router.get('/search', async (req, res) => {
 
     res.json({ results })
   } catch (err) {
+    console.error('SEARCH ERROR:', err)
     res.status(500).json({ message: 'Search failed', error: err.message })
   }
 })
@@ -233,7 +240,9 @@ router.get('/image', async (req, res) => {
     const { url } = req.query
     if (!url) return res.status(400).json({ message: 'URL required' })
 
-    const response = await fetch(decodeURIComponent(url))
+    const response = await fetch(decodeURIComponent(url), {
+      headers: { 'User-Agent': 'Queued/1.0' }
+    })
     if (!response.ok) throw new Error('Failed to fetch image')
 
     const contentType = response.headers.get('content-type') || 'image/jpeg'
@@ -243,6 +252,7 @@ router.get('/image', async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=86400')
     res.send(Buffer.from(buffer))
   } catch (err) {
+    console.error('IMAGE ERROR:', err)
     res.status(500).json({ message: 'Image proxy failed', error: err.message })
   }
 })
