@@ -16,7 +16,9 @@ router.get('/:id', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const threads = await Thread.find().sort({ createdAt: -1 }).limit(50)
+    const { showId } = req.query
+    const query = showId ? { showId: Number(showId) } : {}
+    const threads = await Thread.find(query).sort({ createdAt: -1 }).limit(50)
     res.json(threads)
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch threads', error: err.message })

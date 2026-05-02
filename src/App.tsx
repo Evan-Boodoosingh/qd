@@ -20,6 +20,7 @@ import Community from "./pages/Community"
 import Show from "./pages/Show"
 import Thread from "./pages/Thread"
 import Episode from "./pages/Episode"
+import NewThread from "./pages/NewThread"
 
 function HomePage() {
   return (
@@ -48,6 +49,7 @@ function App() {
       <Route path="/show/:id" element={<Show />} />
       <Route path="/thread/:id" element={<Thread />} />
       <Route path="/show/:id/episode/:ep" element={<Episode />} />
+  
       <Route
         path="/home"
         element={
@@ -77,6 +79,14 @@ function App() {
         element={
           <ProtectedRoute>
             <FriendsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/new-thread"
+        element={
+          <ProtectedRoute>
+            <NewThread />
           </ProtectedRoute>
         }
       />

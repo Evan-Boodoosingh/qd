@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchCurrentSeason, proxyImage } from '../../services/anime'
+import { addToWatchlist } from '../../services/watchlist'
 
 type Show = {
   id: number
@@ -9,12 +10,17 @@ type Show = {
   genres: string[]
   day: string
   synopsis: string
+  episodes: number | null
 }
 
 function Hero() {
   const [shows, setShows] = useState<Show[]>([])
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [addedShows, setAddedShows] = useState<number[]>([])
+
+  const user = localStorage.getItem('user') || sessionStorage.getItem('user')
+  const isLoggedIn = !!user
 
   useEffect(() => {
     fetchCurrentSeason()
@@ -36,6 +42,24 @@ function Hero() {
     return () => clearInterval(timer)
   }, [shows])
 
+  const handleAddToList = async (e: React.MouseEvent, show: Show) => {
+    e.stopPropagation()
+    try {
+      await addToWatchlist({
+        showId: show.id,
+        showName: show.title,
+        image: show.image,
+        totalEpisodes: show.episodes,
+        genres: show.genres,
+      })
+      setAddedShows(prev => [...prev, show.id])
+    } catch (err: any) {
+      if (err.message === 'Show already on your list') {
+        setAddedShows(prev => [...prev, show.id])
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="relative h-[500px] bg-[#1a1815] flex items-center justify-center">
@@ -47,11 +71,12 @@ function Hero() {
   if (shows.length === 0) return null
 
   const show = shows[current]
+  const isAdded = addedShows.includes(show.id)
 
   return (
     <div className="relative h-[500px] overflow-hidden bg-[#0f0e0d]">
 
-      {/* Subtle blurred background for atmosphere */}
+      {/* Blurred background */}
       <img
         src={proxyImage(show.image)}
         alt=""
@@ -61,17 +86,22 @@ function Hero() {
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-[#0f0e0d]/60" />
 
-      {/* Content layout */}
+      {/* Content */}
       <div className="relative h-full max-w-6xl mx-auto px-8 flex items-center gap-12 z-10">
 
-        {/* Left — text content */}
+        {/* Left — text */}
         <div className="flex-1 min-w-0">
           <div className="inline-flex items-center gap-2 text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-full px-3 py-1.5 mb-5">
             <div className="w-1.5 h-1.5 rounded-full bg-[#D13924] animate-pulse" />
             Airing now · Spring 2026
           </div>
 
-          <h2 className="text-4xl font-medium text-[#f0ede8] mb-3 leading-tight">{show.title}</h2>
+          <h2
+            onClick={() => window.location.href = `/show/${show.id}`}
+            className="text-4xl font-medium text-[#f0ede8] mb-3 leading-tight cursor-pointer hover:text-[#D13924] transition-all"
+          >
+            {show.title}
+          </h2>
 
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <span className="text-[12px] text-[#c8c4be]">{show.genres.slice(0, 3).join(' · ')}</span>
@@ -86,14 +116,32 @@ function Hero() {
           </p>
 
           <div className="flex gap-3 mb-10">
+            {isLoggedIn ? (
+              <button
+                onClick={(e) => handleAddToList(e, show)}
+                className="text-white text-sm font-medium px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-all"
+                style={{
+                  backgroundColor: isAdded ? 'rgba(209,57,36,0.2)' : '#D13924',
+                  color: isAdded ? '#D13924' : '#fff',
+                  border: isAdded ? '1px solid #D13924' : 'none',
+                }}
+              >
+                {isAdded ? '✓ On list' : '+ Add to list'}
+              </button>
+            ) : (
+              <button
+                onClick={() => window.location.href = '/register'}
+                className="text-white text-sm font-medium px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-all"
+                style={{ backgroundColor: '#D13924' }}
+              >
+                + Add to list
+              </button>
+            )}
             <button
-              className="text-white text-sm font-medium px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-all"
-              style={{ backgroundColor: '#D13924' }}
+              onClick={() => window.location.href = `/show/${show.id}`}
+              className="bg-white/10 text-[#f0ede8] text-sm px-6 py-2.5 rounded-full border border-white/15 hover:bg-white/15 cursor-pointer transition-all"
             >
-              + Add to list
-            </button>
-            <button className="bg-white/10 text-[#f0ede8] text-sm px-6 py-2.5 rounded-full border border-white/15 hover:bg-white/15 cursor-pointer transition-all">
-              Community
+              View show
             </button>
           </div>
 
@@ -113,7 +161,10 @@ function Hero() {
 
         {/* Right — poster */}
         <div className="flex-shrink-0">
-          <div className="w-[260px] h-[370px] rounded-xl overflow-hidden shadow-2xl">
+          <div
+            onClick={() => window.location.href = `/show/${show.id}`}
+            className="w-[260px] h-[370px] rounded-xl overflow-hidden shadow-2xl cursor-pointer hover:opacity-90 transition-all"
+          >
             <img
               src={proxyImage(show.image)}
               alt={show.title}
