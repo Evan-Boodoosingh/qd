@@ -19,6 +19,7 @@ import Schedule from "./pages/Schedule"
 import Community from "./pages/Community"
 import Show from "./pages/Show"
 import Thread from "./pages/Thread"
+import Episode from "./pages/Episode"
 
 function HomePage() {
   return (
@@ -46,6 +47,7 @@ function App() {
       <Route path="/community" element={<Community />} />
       <Route path="/show/:id" element={<Show />} />
       <Route path="/thread/:id" element={<Thread />} />
+      <Route path="/show/:id/episode/:ep" element={<Episode />} />
       <Route
         path="/home"
         element={

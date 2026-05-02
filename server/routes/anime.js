@@ -8,6 +8,9 @@ const CACHE_DURATION = 60 * 60 * 1000
 const episodeCache = {}
 const EPISODE_CACHE_DURATION = 60 * 60 * 1000
 
+const episodeDetailCache = {}
+const EPISODE_DETAIL_CACHE_DURATION = 60 * 60 * 1000
+
 // GET /api/anime/season
 router.get('/season', async (req, res) => {
   try {
@@ -60,7 +63,6 @@ router.get('/show/:id', async (req, res) => {
 
     const show = showData.data
 
-    // Episodes with caching
     let episodes = []
     try {
       const now = Date.now()
@@ -138,6 +140,64 @@ router.get('/show/:id', async (req, res) => {
     })
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch show data', error: err.message })
+  }
+})
+
+// GET /api/anime/show/:id/episode/:ep
+router.get('/show/:id/episode/:ep', async (req, res) => {
+  try {
+    const { id, ep } = req.params
+    const cacheKey = `${id}-${ep}`
+    const now = Date.now()
+
+    if (
+      episodeDetailCache[cacheKey] &&
+      now - episodeDetailCache[cacheKey].time < EPISODE_DETAIL_CACHE_DURATION
+    ) {
+      return res.json(episodeDetailCache[cacheKey].data)
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    const response = await fetch(`https://api.jikan.moe/v4/anime/${id}/episodes/${ep}`)
+    const data = await response.json()
+
+    if (!data.data) {
+      // Cache the miss too so we don't keep hitting Jikan for missing episodes
+      episodeDetailCache[cacheKey] = {
+        data: {
+          number: parseInt(ep),
+          title: `Episode ${ep}`,
+          airDate: null,
+          filler: false,
+          recap: false,
+          synopsis: null,
+        },
+        time: now
+      }
+      return res.json(episodeDetailCache[cacheKey].data)
+    }
+
+    const episode = data.data
+
+    const result = {
+      number: episode.mal_id,
+      title: episode.title || `Episode ${episode.mal_id}`,
+      titleJapanese: episode.title_japanese || null,
+      titleRomanji: episode.title_romanji || null,
+      airDate: episode.aired || null,
+      score: episode.score || null,
+      filler: episode.filler || false,
+      recap: episode.recap || false,
+      synopsis: episode.synopsis || null,
+      forumUrl: episode.forum_url || null,
+    }
+
+    episodeDetailCache[cacheKey] = { data: result, time: now }
+
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch episode data', error: err.message })
   }
 })
 
