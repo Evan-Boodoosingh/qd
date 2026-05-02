@@ -1,6 +1,19 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
+const friendRequestSchema = new mongoose.Schema({
+  from: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "declined"],
+    default: "pending",
+  },
+}, { timestamps: true })
+
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -21,6 +34,14 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    displayName: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
     avatar: {
       type: String,
       default: "",
@@ -31,6 +52,7 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    friendRequests: [friendRequestSchema],
     watchlist: [
       {
         showId: String,
@@ -46,13 +68,11 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Hash password before saving
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-// Method to check password on login
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };

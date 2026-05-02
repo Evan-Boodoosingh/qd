@@ -82,14 +82,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/new-thread"
-        element={
-          <ProtectedRoute>
-            <NewThread />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/thread/new" element={<ProtectedRoute><NewThread /></ProtectedRoute>} />
     </Routes>
 
   )

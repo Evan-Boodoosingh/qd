@@ -20,6 +20,7 @@ app.use("/api/users", require("./routes/users"));
 app.use('/api/anime', require('./routes/anime'))
 app.use('/api/threads', require('./routes/threads'))
 app.use('/api/watchlist', require('./routes/watchlist'))
+app.use('/api/friends', require('./routes/friends'))
 
 // Connect to MongoDB and start server
 mongoose
