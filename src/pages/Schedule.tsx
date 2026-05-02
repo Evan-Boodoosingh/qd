@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
 import { fetchCurrentSeason, proxyImage } from '../services/anime'
+import { addToWatchlist } from '../services/watchlist'
 import WeeklyGrid from '../components/WeeklyGrid/WeeklyGrid'
 
 type Show = {
@@ -53,12 +54,17 @@ const normalizeDayName = (day: string): string => {
   return map[day] || day
 }
 
+const getTodayName = (): string => {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long' })
+}
+
 function Schedule() {
   const [shows, setShows] = useState<Show[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
-  const [selectedDay, setSelectedDay] = useState('Wednesday')
+  const [selectedDay, setSelectedDay] = useState(getTodayName())
   const [activeTab, setActiveTab] = useState<ScheduleTab>('fullSchedule')
+  const [addedShows, setAddedShows] = useState<number[]>([])
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const isLoggedIn = !!user
@@ -84,6 +90,24 @@ function Schedule() {
       .catch(() => setLoading(false))
   }, [])
 
+  const handleAddToList = async (e: React.MouseEvent, show: Show) => {
+    e.stopPropagation()
+    try {
+      await addToWatchlist({
+        showId: show.id,
+        showName: show.title,
+        image: show.image,
+        totalEpisodes: show.episodes,
+        genres: show.genres,
+      })
+      setAddedShows(prev => [...prev, show.id])
+    } catch (err: any) {
+      if (err.message === 'Show already on your list') {
+        setAddedShows(prev => [...prev, show.id])
+      }
+    }
+  }
+
   const baseShows = activeTab === 'mySchedule'
     ? shows.filter((s) => s.onMyList)
     : shows
@@ -100,6 +124,8 @@ function Schedule() {
       if (!a.time || !b.time) return 0
       return a.time.localeCompare(b.time)
     })
+
+  const today = getTodayName()
 
   if (loading) {
     return (
@@ -168,6 +194,7 @@ function Schedule() {
         <div className="grid grid-cols-7 gap-2 mb-8">
           {days.map((day) => {
             const hasNew = filteredShows.some((s) => s.day === day)
+            const isToday = day === today
             return (
               <button
                 key={day}
@@ -179,9 +206,9 @@ function Schedule() {
                 }`}
               >
                 <div className={`text-[11px] font-medium mb-1 ${
-                  selectedDay === day ? 'text-[#D13924]' : 'text-[#9a9590]'
+                  selectedDay === day ? 'text-[#D13924]' : isToday ? 'text-[#f0ede8]' : 'text-[#9a9590]'
                 }`}>
-                  {day.slice(0, 3)}
+                  {day.slice(0, 3)}{isToday ? ' · Today' : ''}
                 </div>
                 {isLoggedIn && activeTab === 'mySchedule' && hasNew && (
                   <div className="flex items-center justify-center">
@@ -196,7 +223,9 @@ function Schedule() {
         {/* Timeline */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-sm font-medium text-[#f0ede8]">{selectedDay}</h2>
+            <h2 className="text-sm font-medium text-[#f0ede8]">
+              {selectedDay}{selectedDay === today ? ' · Today' : ''}
+            </h2>
             <div className="flex-1 h-px bg-white/5" />
             <span className="text-[11px] text-[#9a9590]">{showsForDay.length} airing</span>
           </div>
@@ -211,6 +240,7 @@ function Schedule() {
               {showsForDay.map((show) => (
                 <div
                   key={show.id}
+                  onClick={() => window.location.href = `/show/${show.id}`}
                   className="bg-[#1a1815] border border-white/7 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
                 >
                   <div className="text-center flex-shrink-0 w-20">
@@ -250,10 +280,13 @@ function Schedule() {
                   {isLoggedIn && (
                     <button
                       className="text-[11px] font-medium px-3 py-1.5 rounded-full flex-shrink-0 cursor-pointer hover:opacity-90 transition-all"
-                      style={{ backgroundColor: '#D13924', color: '#fff' }}
-                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        backgroundColor: addedShows.includes(show.id) ? 'rgba(209,57,36,0.2)' : '#D13924',
+                        color: addedShows.includes(show.id) ? '#D13924' : '#fff'
+                      }}
+                      onClick={(e) => handleAddToList(e, show)}
                     >
-                      + List
+                      {addedShows.includes(show.id) ? '✓ On list' : '+ List'}
                     </button>
                   )}
                 </div>
@@ -285,6 +318,7 @@ function Schedule() {
             {filteredShows.map((show) => (
               <div
                 key={show.id}
+                onClick={() => window.location.href = `/show/${show.id}`}
                 className="bg-[#1a1815] border border-white/7 rounded-xl overflow-hidden cursor-pointer hover:border-[#D13924]/30 transition-all"
               >
                 <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
