@@ -1,7 +1,6 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route } from "react-router-dom"
 import Nav from "./components/Nav/Nav"
-import Hero from "./components/Hero/Hero"
-// import Ticker from "./components/Ticker/Ticker"
 import Calendar from "./components/Calendar/Calendar"
 import Friends from "./components/Friends/Friends"
 import Discussions from "./components/Discussions/Discussions"
@@ -21,18 +20,31 @@ import Show from "./pages/Show"
 import Thread from "./pages/Thread"
 import Episode from "./pages/Episode"
 import NewThread from "./pages/NewThread"
+import Hero from "./components/Hero/Hero"
+import { fetchWatchlist } from './services/watchlist'
 
 function HomePage() {
+  const [watchedIds, setWatchedIds] = useState<number[]>([])
+
+  useEffect(() => {
+    fetchWatchlist()
+      .then((data) => setWatchedIds(data.map((e: any) => e.showId)))
+      .catch(() => {})
+  }, [])
+
+  const handleAddedToList = (showId: number) => {
+    setWatchedIds(prev => [...prev, showId])
+  }
+
   return (
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
-      <Hero />
-      {/* <Ticker /> */}
-      <Calendar />
+      <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
+      <Calendar watchedIds={watchedIds} onAdded={handleAddedToList} />
       <Friends />
       <Discussions />
       <Liked />
-      <Trending />
+      <Trending watchedIds={watchedIds} onAdded={handleAddedToList} />
       <PopularDiscussions />
     </div>
   )
@@ -49,7 +61,6 @@ function App() {
       <Route path="/show/:id" element={<Show />} />
       <Route path="/thread/:id" element={<Thread />} />
       <Route path="/show/:id/episode/:ep" element={<Episode />} />
-  
       <Route
         path="/home"
         element={
@@ -84,7 +95,6 @@ function App() {
       />
       <Route path="/thread/new" element={<ProtectedRoute><NewThread /></ProtectedRoute>} />
     </Routes>
-
   )
 }
 

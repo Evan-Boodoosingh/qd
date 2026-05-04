@@ -12,6 +12,7 @@ const watchlistSchema = new mongoose.Schema({
   },
   currentEpisode: { type: Number, default: 0 },
   totalEpisodes: { type: Number },
+  airingEpisode: { type: Number },
   rating: { type: Number, min: 1, max: 10 },
   genres: [String],
   subbed: { type: Boolean, default: true },

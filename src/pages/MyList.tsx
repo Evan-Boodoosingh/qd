@@ -1,102 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Nav from '../components/Nav/Nav'
+import { proxyImage } from '../services/anime'
+import { fetchWatchlist, updateWatchlistEntry, removeFromWatchlist } from '../services/watchlist'
 
 type WatchStatus = 'watching' | 'planToWatch' | 'completed' | 'dropped'
 
-type Show = {
-  id: string
-  name: string
-  emoji: string
-  genre: string
-  platform: string
+type WatchlistEntry = {
+  _id: string
+  showId: number
+  showName: string
+  image: string | null
   status: WatchStatus
   currentEpisode: number
-  totalEpisodes: number
+  totalEpisodes: number | null
+  airingEpisode: number | null
   rating: number | null
-  season: string
-  year: number
+  genres: string[]
 }
-
-const mockShows: Show[] = [
-  {
-    id: '1',
-    name: 'Solo Leveling S3',
-    emoji: '🌙',
-    genre: 'Action · Fantasy',
-    platform: 'Prime Video',
-    status: 'watching',
-    currentEpisode: 6,
-    totalEpisodes: 12,
-    rating: null,
-    season: 'Spring',
-    year: 2026,
-  },
-  {
-    id: '2',
-    name: 'Demon Slayer S5',
-    emoji: '⛩',
-    genre: 'Action · Supernatural',
-    platform: 'Crunchyroll',
-    status: 'watching',
-    currentEpisode: 8,
-    totalEpisodes: 12,
-    rating: null,
-    season: 'Spring',
-    year: 2026,
-  },
-  {
-    id: '3',
-    name: 'Frieren S2',
-    emoji: '🌸',
-    genre: 'Fantasy · Slice of life',
-    platform: 'Crunchyroll',
-    status: 'planToWatch',
-    currentEpisode: 0,
-    totalEpisodes: 24,
-    rating: null,
-    season: 'Spring',
-    year: 2026,
-  },
-  {
-    id: '4',
-    name: 'Vinland Saga S1',
-    emoji: '⚔️',
-    genre: 'Historical · Drama',
-    platform: 'Netflix',
-    status: 'completed',
-    currentEpisode: 24,
-    totalEpisodes: 24,
-    rating: 9,
-    season: 'Fall',
-    year: 2025,
-  },
-  {
-    id: '5',
-    name: 'JJK Season 3',
-    emoji: '🔥',
-    genre: 'Action · Dark fantasy',
-    platform: 'Crunchyroll',
-    status: 'watching',
-    currentEpisode: 9,
-    totalEpisodes: 12,
-    rating: null,
-    season: 'Spring',
-    year: 2026,
-  },
-  {
-    id: '6',
-    name: 'Sword Art Online',
-    emoji: '⚡',
-    genre: 'Action · Isekai',
-    platform: 'Netflix',
-    status: 'dropped',
-    currentEpisode: 7,
-    totalEpisodes: 25,
-    rating: 5,
-    season: 'Winter',
-    year: 2025,
-  },
-]
 
 const tabs: { label: string; value: WatchStatus }[] = [
   { label: 'Watching', value: 'watching' },
@@ -105,137 +25,367 @@ const tabs: { label: string; value: WatchStatus }[] = [
   { label: 'Dropped', value: 'dropped' },
 ]
 
+const statusLabels: Record<WatchStatus, string> = {
+  watching: 'Watching',
+  planToWatch: 'Plan to Watch',
+  completed: 'Completed',
+  dropped: 'Dropped',
+}
+
+const emptyMessages: Record<WatchStatus, { heading: string; sub: string }> = {
+  watching: { heading: "You're not watching anything right now.", sub: "Browse the schedule and add something to your list." },
+  planToWatch: { heading: "Nothing queued up yet.", sub: "Find something on the schedule and add it to your queue." },
+  completed: { heading: "No completed shows yet.", sub: "Finish a show and it'll appear here." },
+  dropped: { heading: "Nothing dropped.", sub: "Hopefully it stays that way." },
+}
+
 function MyList() {
   const [activeTab, setActiveTab] = useState<WatchStatus>('watching')
+  const [watchlist, setWatchlist] = useState<WatchlistEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-  const filteredShows = mockShows.filter((show) => show.status === activeTab)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchWatchlist()
+        setWatchlist(data)
+      } catch (err) {
+        console.error('Failed to load watchlist:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
-  const groupedBySeasonYear = filteredShows.reduce<Record<string, Show[]>>((acc, show) => {
-    const key = `${show.season} ${show.year}`
-    if (!acc[key]) acc[key] = []
-    acc[key].push(show)
-    return acc
-  }, {})
+  const filteredShows = watchlist.filter((e) => e.status === activeTab)
+
+  const handleStatusChange = async (showId: number, newStatus: WatchStatus, totalEpisodes: number | null) => {
+    const updates: { status: WatchStatus; currentEpisode?: number } = { status: newStatus }
+    if (newStatus === 'completed' && totalEpisodes) {
+      updates.currentEpisode = totalEpisodes
+    }
+    setWatchlist(prev =>
+      prev.map(e => e.showId === showId ? { ...e, ...updates } : e)
+    )
+    setOpenDropdown(null)
+    try {
+      await updateWatchlistEntry(showId, updates)
+    } catch (err) {
+      console.error('Failed to update status:', err)
+    }
+  }
+
+  const handleEpisodeChange = (showId: number, delta: number, current: number, total: number | null, airing: number | null) => {
+    const cap = airing ?? total ?? Infinity
+    const next = Math.max(0, Math.min(current + delta, cap))
+    setWatchlist(prev =>
+      prev.map(e => e.showId === showId ? { ...e, currentEpisode: next } : e)
+    )
+    if (debounceTimers.current[showId]) clearTimeout(debounceTimers.current[showId])
+    debounceTimers.current[showId] = setTimeout(async () => {
+      try {
+        await updateWatchlistEntry(showId, { currentEpisode: next })
+      } catch (err) {
+        console.error('Failed to update episode:', err)
+      }
+    }, 600)
+  }
+
+  const handleRating = async (showId: number, rating: number) => {
+    setWatchlist(prev =>
+      prev.map(e => e.showId === showId ? { ...e, rating } : e)
+    )
+    try {
+      await updateWatchlistEntry(showId, { rating })
+    } catch (err) {
+      console.error('Failed to save rating:', err)
+    }
+  }
+
+  const handleRemove = async (showId: number) => {
+    try {
+      await removeFromWatchlist(showId)
+      setWatchlist(prev => prev.filter(e => e.showId !== showId))
+      setConfirmDelete(null)
+    } catch (err) {
+      console.error('Failed to remove show:', err)
+    }
+  }
+
+  const getProgressPercent = (show: WatchlistEntry) => {
+    const ceiling = show.airingEpisode ?? show.totalEpisodes
+    if (!ceiling) return 0
+    return Math.min((show.currentEpisode / ceiling) * 100, 100)
+  }
+
+  const getEpisodesLeft = (show: WatchlistEntry) => {
+    const ceiling = show.airingEpisode ?? show.totalEpisodes
+    if (!ceiling) return null
+    return ceiling - show.currentEpisode
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-[#0f0e0d] min-h-screen text-white">
+        <Nav />
+        <div className="px-6 py-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-[#1a1815] border border-white/7 rounded-xl overflow-hidden animate-pulse">
+                <div className="h-[120px] bg-white/5" />
+                <div className="p-4 space-y-2">
+                  <div className="h-3 bg-white/5 rounded w-3/4" />
+                  <div className="h-2 bg-white/5 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="bg-[#0f0e0d] min-h-screen text-white">
+    <div
+      className="bg-[#0f0e0d] min-h-screen text-white"
+      onClick={() => setOpenDropdown(null)}
+    >
       <Nav />
 
-      <div className="px-6 py-8">
+      <div className="px-6 py-8 max-w-6xl mx-auto">
 
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl font-medium text-[#f0ede8] mb-1">My List</h1>
-          <p className="text-[13px] text-[#9a9590]">Everything you're watching, completed, and queued up</p>
+          <p className="text-[13px] text-[#9a9590]">
+            {watchlist.length} {watchlist.length === 1 ? 'show' : 'shows'} total
+          </p>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1 mb-8 w-fit">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${
-                activeTab === tab.value
-                  ? 'text-white'
-                  : 'text-[#9a9590] hover:text-[#f0ede8]'
-              }`}
-              style={activeTab === tab.value ? { backgroundColor: '#D13924' } : {}}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const count = watchlist.filter(e => e.status === tab.value).length
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`px-5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                  activeTab === tab.value ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
+                }`}
+                style={activeTab === tab.value ? { backgroundColor: '#D13924' } : {}}
+              >
+                {tab.label}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  activeTab === tab.value ? 'bg-white/20' : 'bg-white/5'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
-        {/* Empty state */}
         {filteredShows.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-[#9a9590] text-sm mb-2">Nothing here yet</p>
-            <p className="text-[#5a5650] text-[12px]">Browse the schedule and add shows to your list</p>
+            <p className="text-[#9a9590] text-sm mb-2">{emptyMessages[activeTab].heading}</p>
+            <p className="text-[#5a5650] text-[12px]">{emptyMessages[activeTab].sub}</p>
           </div>
         )}
 
-        {/* Shows grouped by season and year */}
-        {Object.entries(groupedBySeasonYear).map(([seasonYear, shows]) => (
-          <div key={seasonYear} className="mb-10">
+        {filteredShows.length > 0 && (
+          <div className="grid grid-cols-3 gap-4">
+            {filteredShows.map((show) => (
+              <div
+                key={show._id}
+                onClick={() => window.location.href = `/show/${show.showId}`}
+                className="bg-[#1a1815] border border-white/7 rounded-xl hover:border-[#D13924]/30 transition-all cursor-pointer relative"
+              >
+                {/* Image — rounded top corners, overflow hidden only on image */}
+                <div className="h-[120px] bg-[#0f0e0d] overflow-hidden rounded-t-xl">
+                  {show.image ? (
+                    <img
+                      src={proxyImage(show.image)}
+                      alt={show.showName}
+                      className="w-full h-full object-cover opacity-80"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[#5a5650] text-[11px]">
+                      No image
+                    </div>
+                  )}
+                </div>
 
-            {/* Season label */}
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-[13px] font-medium text-[#f0ede8]">{seasonYear}</span>
-              <div className="flex-1 h-px bg-white/5" />
-            </div>
-
-            {/* Show cards */}
-            <div className="grid grid-cols-3 gap-4">
-              {shows.map((show) => (
-                <div
-                  key={show.id}
-                  className="bg-[#1a1815] border border-white/7 rounded-xl overflow-hidden hover:border-[#D13924]/30 transition-all cursor-pointer"
-                >
-                  {/* Thumbnail */}
-                  <div className="h-[100px] bg-[#0f0e0d] flex items-center justify-center text-4xl">
-                    {show.emoji}
+                <div className="p-4">
+                  <div className="text-[13px] font-medium text-[#f0ede8] mb-1 truncate">{show.showName}</div>
+                  <div className="text-[11px] text-[#9a9590] mb-3">
+                    {show.genres.slice(0, 2).join(' · ') || 'Anime'}
                   </div>
 
-                  {/* Info */}
-                  <div className="p-4">
-                    <div className="text-[13px] font-medium text-[#f0ede8] mb-1 truncate">{show.name}</div>
-                    <div className="text-[11px] text-[#9a9590] mb-3">{show.genre}</div>
+                  {/* Status dropdown */}
+                  <div className="relative mb-3" style={{ zIndex: openDropdown === show._id ? 30 : 1 }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenDropdown(openDropdown === show._id ? null : show._id)
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-[#f0ede8] hover:bg-white/10 transition-all cursor-pointer"
+                    >
+                      <span>{statusLabels[show.status]}</span>
+                      <span className="text-[#9a9590]">▾</span>
+                    </button>
 
-                    {/* Episode progress */}
-                    {(show.status === 'watching' || show.status === 'completed') && (
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] text-[#9a9590]">Episode progress</span>
-                          <span className="text-[10px] text-[#f0ede8]">{show.currentEpisode} / {show.totalEpisodes}</span>
-                        </div>
-                        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${(show.currentEpisode / show.totalEpisodes) * 100}%`,
-                              backgroundColor: '#D13924'
+                    {openDropdown === show._id && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-full left-0 right-0 mt-1 bg-[#1a1815] border border-white/10 rounded-lg overflow-hidden shadow-xl"
+                        style={{ zIndex: 50 }}
+                      >
+                        {tabs.map((tab) => (
+                          <button
+                            key={tab.value}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStatusChange(show.showId, tab.value, show.totalEpisodes)
                             }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Rating — only for completed and dropped */}
-                    {(show.status === 'completed' || show.status === 'dropped') && (
-                      <div className="flex items-center gap-1 mb-3">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-                          <div
-                            key={star}
-                            className="w-4 h-1.5 rounded-full cursor-pointer transition-all"
-                            style={{
-                              backgroundColor: show.rating && star <= show.rating ? '#D13924' : 'rgba(255,255,255,0.1)'
-                            }}
-                          />
+                            className={`w-full text-left px-3 py-2 text-[11px] transition-all cursor-pointer ${
+                              show.status === tab.value
+                                ? 'text-white'
+                                : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'
+                            }`}
+                            style={show.status === tab.value ? { backgroundColor: '#D13924' } : {}}
+                          >
+                            {tab.label}
+                          </button>
                         ))}
-                        <span className="text-[10px] text-[#9a9590] ml-1">{show.rating ? `${show.rating}/10` : 'Rate it'}</span>
                       </div>
                     )}
+                  </div>
 
-                    {/* Platform */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-[#D13924] bg-[#D13924]/10 px-2 py-0.5 rounded">
-                        {show.platform}
-                      </span>
-                      {show.status === 'watching' && (
-                        <span className="text-[10px] text-[#9a9590]">
-                          {show.totalEpisodes - show.currentEpisode} ep left
+                  {/* Episode progress */}
+                  {(show.status === 'watching' || show.status === 'completed') && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] text-[#9a9590]">Progress</span>
+                        <span className="text-[10px] text-[#f0ede8]">
+                          {show.currentEpisode} / {show.airingEpisode ?? show.totalEpisodes ?? '?'}
                         </span>
+                      </div>
+                      <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-2">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${getProgressPercent(show)}%`,
+                            backgroundColor: '#D13924'
+                          }}
+                        />
+                      </div>
+
+                      {show.status === 'watching' && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEpisodeChange(show.showId, -1, show.currentEpisode, show.totalEpisodes, show.airingEpisode)
+                            }}
+                            className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#9a9590] hover:text-white hover:bg-white/10 transition-all text-xs cursor-pointer"
+                          >
+                            −
+                          </button>
+                          <span className="text-[10px] text-[#9a9590] flex-1 text-center">
+                            Ep {show.currentEpisode}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEpisodeChange(show.showId, 1, show.currentEpisode, show.totalEpisodes, show.airingEpisode)
+                            }}
+                            className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#9a9590] hover:text-white hover:bg-white/10 transition-all text-xs cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
                       )}
                     </div>
+                  )}
+
+                  {/* Rating */}
+                  {(show.status === 'completed' || show.status === 'dropped') && (
+                    <div className="flex items-center gap-1 mb-3">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                        <div
+                          key={n}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRating(show.showId, n)
+                          }}
+                          className="w-4 h-1.5 rounded-full cursor-pointer transition-all hover:opacity-80"
+                          style={{
+                            backgroundColor: show.rating && n <= show.rating
+                              ? '#D13924'
+                              : 'rgba(255,255,255,0.1)'
+                          }}
+                        />
+                      ))}
+                      <span className="text-[10px] text-[#9a9590] ml-1">
+                        {show.rating ? `${show.rating}/10` : 'Rate'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-[#9a9590]">
+                      {show.status === 'watching' && getEpisodesLeft(show) !== null
+                        ? `${getEpisodesLeft(show)} ep left`
+                        : show.genres[0] || ''}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConfirmDelete(show._id)
+                      }}
+                      className="text-[10px] text-[#5a5650] hover:text-red-400 transition-all cursor-pointer"
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-[#1a1815] border border-white/10 rounded-2xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-[15px] font-medium text-[#f0ede8] mb-2">Remove from list?</h3>
+            <p className="text-[13px] text-[#9a9590] mb-6">
+              This will delete your progress and rating for this show.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 rounded-full text-[13px] text-[#f0ede8] bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const entry = watchlist.find(e => e._id === confirmDelete)
+                  if (entry) handleRemove(entry.showId)
+                }}
+                className="flex-1 py-2.5 rounded-full text-[13px] text-white hover:opacity-90 transition-all cursor-pointer"
+                style={{ backgroundColor: '#D13924' }}
+              >
+                Remove
+              </button>
             </div>
           </div>
-        ))}
-
-      </div>
+        </div>
+      )}
     </div>
   )
 }

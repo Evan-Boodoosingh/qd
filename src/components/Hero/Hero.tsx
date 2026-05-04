@@ -11,13 +11,19 @@ type Show = {
   day: string
   synopsis: string
   episodes: number | null
+  airing: boolean
+  episodeList?: { number: number }[]
 }
 
-function Hero() {
+type Props = {
+  watchedIds: number[]
+  onAdded: (showId: number) => void
+}
+
+function Hero({ watchedIds, onAdded }: Props) {
   const [shows, setShows] = useState<Show[]>([])
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [addedShows, setAddedShows] = useState<number[]>([])
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const isLoggedIn = !!user
@@ -45,18 +51,21 @@ function Hero() {
   const handleAddToList = async (e: React.MouseEvent, show: Show) => {
     e.stopPropagation()
     try {
+      const airingEpisode = show.airing
+        ? (show.episodeList?.length || null)
+        : show.episodes
+
       await addToWatchlist({
         showId: show.id,
         showName: show.title,
         image: show.image,
         totalEpisodes: show.episodes,
+        airingEpisode,
         genres: show.genres,
       })
-      setAddedShows(prev => [...prev, show.id])
+      onAdded(show.id)
     } catch (err: any) {
-      if (err.message === 'Show already on your list') {
-        setAddedShows(prev => [...prev, show.id])
-      }
+      if (err.message === 'Show already on your list') onAdded(show.id)
     }
   }
 
@@ -71,25 +80,20 @@ function Hero() {
   if (shows.length === 0) return null
 
   const show = shows[current]
-  const isAdded = addedShows.includes(show.id)
+  const isAdded = watchedIds.includes(show.id)
 
   return (
     <div className="relative h-[500px] overflow-hidden bg-[#0f0e0d]">
 
-      {/* Blurred background */}
       <img
         src={proxyImage(show.image)}
         alt=""
         className="absolute inset-0 w-full h-full object-cover opacity-10 blur-xl scale-110 transition-all duration-1000"
       />
-
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-[#0f0e0d]/60" />
 
-      {/* Content */}
       <div className="relative h-full max-w-6xl mx-auto px-8 flex items-center gap-12 z-10">
 
-        {/* Left — text */}
         <div className="flex-1 min-w-0">
           <div className="inline-flex items-center gap-2 text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-full px-3 py-1.5 mb-5">
             <div className="w-1.5 h-1.5 rounded-full bg-[#D13924] animate-pulse" />
@@ -145,7 +149,6 @@ function Hero() {
             </button>
           </div>
 
-          {/* Dots */}
           <div className="flex gap-2">
             {shows.map((_, i) => (
               <button
@@ -159,7 +162,6 @@ function Hero() {
           </div>
         </div>
 
-        {/* Right — poster */}
         <div className="flex-shrink-0">
           <div
             onClick={() => window.location.href = `/show/${show.id}`}
@@ -174,7 +176,6 @@ function Hero() {
         </div>
 
       </div>
-
     </div>
   )
 }

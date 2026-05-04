@@ -8,6 +8,7 @@ export async function addToWatchlist(show: {
   showName: string
   image: string | null
   totalEpisodes: number | null
+  airingEpisode: number | null
   genres: string[]
 }) {
   const token = getToken()
@@ -19,10 +20,7 @@ export async function addToWatchlist(show: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      ...show,
-      status: 'planToWatch',
-    }),
+    body: JSON.stringify({ ...show, status: 'planToWatch' }),
   })
 
   if (!response.ok) {
@@ -48,6 +46,7 @@ export async function fetchWatchlist() {
 export async function updateWatchlistEntry(showId: number, updates: {
   status?: string
   currentEpisode?: number
+  airingEpisode?: number
   rating?: number
 }) {
   const token = getToken()

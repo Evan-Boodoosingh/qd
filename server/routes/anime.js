@@ -22,10 +22,18 @@ router.get('/season', async (req, res) => {
       return res.json(cachedSeason)
     }
 
-    const response = await jikanFetch('https://api.jikan.moe/v4/seasons/now?limit=25')
-    const data = await response.json()
+    // Fetch seasonal premieres and ongoing shows in parallel
+    const [seasonalRes, ongoingRes] = await Promise.all([
+      fetch('https://api.jikan.moe/v4/seasons/now?limit=25'),
+      fetch('https://api.jikan.moe/v4/anime?status=airing&type=tv&order_by=members&sort=desc&limit=25')
+    ])
 
-    const shows = data.data.map((show) => ({
+    const [seasonalData, ongoingData] = await Promise.all([
+      seasonalRes.json(),
+      ongoingRes.json()
+    ])
+
+    const mapShow = (show, isOngoing) => ({
       id: show.mal_id,
       title: show.title_english || show.title,
       image: show.images?.jpg?.large_image_url || null,
@@ -42,14 +50,35 @@ router.get('/season', async (req, res) => {
       year: show.year,
       airing: show.airing,
       url: show.url,
-    }))
+      isOngoing,
+    })
 
-    cachedSeason = { shows, fetchedAt: new Date().toISOString() }
+    const seasonal = (seasonalData.data || []).map((s) => mapShow(s, false))
+    const ongoing = (ongoingData.data || []).map((s) => mapShow(s, true))
+
+    // Merge and deduplicate by id — seasonal takes priority over ongoing
+    const seenIds = new Set()
+    const merged = []
+
+    for (const show of seasonal) {
+      if (!seenIds.has(show.id)) {
+        seenIds.add(show.id)
+        merged.push(show)
+      }
+    }
+
+    for (const show of ongoing) {
+      if (!seenIds.has(show.id)) {
+        seenIds.add(show.id)
+        merged.push(show)
+      }
+    }
+
+    cachedSeason = { shows: merged, fetchedAt: new Date().toISOString() }
     cacheTime = Date.now()
 
     res.json(cachedSeason)
   } catch (err) {
-    console.error('SEASON ERROR:', err)
     res.status(500).json({ message: 'Failed to fetch season data', error: err.message })
   }
 })

@@ -155,11 +155,16 @@ function Show() {
   const handleAddToList = async () => {
     if (!show) return
     try {
+      const airingEpisode = show.airing
+        ? show.episodeList.length || null
+        : show.episodes
+
       await addToWatchlist({
         showId: show.id,
         showName: show.title,
         image: show.image,
         totalEpisodes: show.episodes,
+        airingEpisode,
         genres: show.genres,
       })
       setOnList(true)
@@ -183,9 +188,13 @@ function Show() {
 
   const handleEpisodeChange = async (newEp: number) => {
     if (!show) return
-    setCurrentEpisode(newEp)
+    const cap = show.airing
+      ? (show.episodeList.length || show.episodes || 999)
+      : (show.episodes || 999)
+    const capped = Math.min(Math.max(0, newEp), cap)
+    setCurrentEpisode(capped)
     try {
-      await updateWatchlistEntry(show.id, { currentEpisode: newEp })
+      await updateWatchlistEntry(show.id, { currentEpisode: capped })
     } catch {}
   }
 
@@ -210,6 +219,10 @@ function Show() {
       </div>
     )
   }
+
+  const episodeCap = show.airing
+    ? (show.episodeList.length || show.episodes || null)
+    : show.episodes
 
   return (
     <div className="bg-[#0f0e0d] min-h-screen text-white">
@@ -287,14 +300,14 @@ function Show() {
                   {onList && watchStatus === 'watching' && (
                     <div className="flex items-center gap-2 bg-[#0f0e0d] border border-white/7 rounded-lg px-3 py-2">
                       <button
-                        onClick={() => handleEpisodeChange(Math.max(0, currentEpisode - 1))}
+                        onClick={() => handleEpisodeChange(currentEpisode - 1)}
                         className="text-[#9a9590] hover:text-[#f0ede8] cursor-pointer w-4 text-center"
                       >−</button>
                       <span className="text-[12px] text-[#f0ede8] w-24 text-center">
-                        Ep {currentEpisode} / {show.episodes || '?'}
+                        Ep {currentEpisode} / {episodeCap || '?'}
                       </span>
                       <button
-                        onClick={() => handleEpisodeChange(Math.min(show.episodes || 999, currentEpisode + 1))}
+                        onClick={() => handleEpisodeChange(currentEpisode + 1)}
                         className="text-[#9a9590] hover:text-[#f0ede8] cursor-pointer w-4 text-center"
                       >+</button>
                     </div>

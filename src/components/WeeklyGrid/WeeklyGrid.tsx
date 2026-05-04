@@ -8,6 +8,7 @@ type Show = {
   day: string
   time: string | null
   timezone: string
+  isOngoing?: boolean
 }
 
 type Props = {
@@ -74,12 +75,19 @@ function WeeklyGrid({ shows }: Props) {
                   onClick={() => window.location.href = `/show/${show.id}`}
                   className="rounded-lg border border-white/7 bg-[#1a1815] cursor-pointer hover:border-[#D13924]/40 transition-all overflow-hidden"
                 >
-                  <div className="overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                  <div className="relative overflow-hidden" style={{ aspectRatio: '1/1' }}>
                     <img
                       src={proxyImage(show.image)}
                       alt={show.title}
                       className="w-full h-full object-cover"
                     />
+                    {show.isOngoing && (
+                      <div className="absolute top-1 right-1">
+                        <span className="text-[7px] text-[#7F77DD] bg-[#0f0e0d]/80 border border-[#7F77DD]/40 px-1.5 py-0.5 rounded-full">
+                          Ongoing
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-2">
                     <div className="text-[11px] text-[#f0ede8] leading-tight truncate mb-1 font-medium">{show.title}</div>

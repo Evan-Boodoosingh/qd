@@ -2,7 +2,6 @@ const express = require('express')
 const router = express.Router()
 const Watchlist = require('../models/Watchlist')
 const auth = require('../middleware/auth')
-const User = require('../models/User')
 
 // GET /api/watchlist — get logged in user's full watchlist
 router.get('/', auth, async (req, res) => {
@@ -17,7 +16,7 @@ router.get('/', auth, async (req, res) => {
 // POST /api/watchlist — add show to list
 router.post('/', auth, async (req, res) => {
   try {
-    const { showId, showName, image, status, totalEpisodes, genres } = req.body
+    const { showId, showName, image, status, totalEpisodes, airingEpisode, genres } = req.body
 
     const existing = await Watchlist.findOne({ user: req.user.userId, showId })
     if (existing) {
@@ -31,6 +30,7 @@ router.post('/', auth, async (req, res) => {
       image,
       status: status || 'planToWatch',
       totalEpisodes,
+      airingEpisode,
       genres,
     })
 
@@ -41,10 +41,10 @@ router.post('/', auth, async (req, res) => {
   }
 })
 
-// PATCH /api/watchlist/:showId — update episode, status, or rating
+// PATCH /api/watchlist/:showId — update episode, status, rating, or airingEpisode
 router.patch('/:showId', auth, async (req, res) => {
   try {
-    const { status, currentEpisode, rating } = req.body
+    const { status, currentEpisode, rating, airingEpisode } = req.body
 
     const entry = await Watchlist.findOne({ user: req.user.userId, showId: req.params.showId })
     if (!entry) return res.status(404).json({ message: 'Show not on your list' })
@@ -52,6 +52,7 @@ router.patch('/:showId', auth, async (req, res) => {
     if (status !== undefined) entry.status = status
     if (currentEpisode !== undefined) entry.currentEpisode = currentEpisode
     if (rating !== undefined) entry.rating = rating
+    if (airingEpisode !== undefined) entry.airingEpisode = airingEpisode
 
     await entry.save()
     res.json(entry)

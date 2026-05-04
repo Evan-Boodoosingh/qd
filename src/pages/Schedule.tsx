@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
 import { fetchCurrentSeason, proxyImage } from '../services/anime'
-import { addToWatchlist } from '../services/watchlist'
+import { addToWatchlist, fetchWatchlist } from '../services/watchlist'
 import WeeklyGrid from '../components/WeeklyGrid/WeeklyGrid'
 
 type Show = {
@@ -18,9 +18,10 @@ type Show = {
   subbed: boolean
   dubbed: boolean
   onMyList: boolean
+  isOngoing: boolean
 }
 
-type FilterType = 'all' | 'subbed' | 'dubbed'
+// type FilterType = 'all' | 'subbed' | 'dubbed'
 type ScheduleTab = 'mySchedule' | 'fullSchedule'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -61,10 +62,11 @@ const getTodayName = (): string => {
 function Schedule() {
   const [shows, setShows] = useState<Show[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<FilterType>('all')
+  // const [filter, setFilter] = useState<FilterType>('all')
+  const [showOngoing, setShowOngoing] = useState(true)
   const [selectedDay, setSelectedDay] = useState(getTodayName())
   const [activeTab, setActiveTab] = useState<ScheduleTab>('fullSchedule')
-  const [addedShows, setAddedShows] = useState<number[]>([])
+  const [watchedIds, setWatchedIds] = useState<number[]>([])
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const isLoggedIn = !!user
@@ -80,6 +82,7 @@ function Schedule() {
             onMyList: false,
             subbed: true,
             dubbed: false,
+            isOngoing: s.isOngoing || false,
           }))
           .filter((s: any, index: number, self: any[]) =>
             index === self.findIndex((t: any) => t.id === s.id)
@@ -88,6 +91,12 @@ function Schedule() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+
+    if (isLoggedIn) {
+      fetchWatchlist()
+        .then((data) => setWatchedIds(data.map((e: any) => e.showId)))
+        .catch(() => {})
+    }
   }, [])
 
   const handleAddToList = async (e: React.MouseEvent, show: Show) => {
@@ -100,23 +109,26 @@ function Schedule() {
         totalEpisodes: show.episodes,
         genres: show.genres,
       })
-      setAddedShows(prev => [...prev, show.id])
+      setWatchedIds(prev => [...prev, show.id])
     } catch (err: any) {
       if (err.message === 'Show already on your list') {
-        setAddedShows(prev => [...prev, show.id])
+        setWatchedIds(prev => [...prev, show.id])
       }
     }
   }
 
   const baseShows = activeTab === 'mySchedule'
-    ? shows.filter((s) => s.onMyList)
+    ? shows.filter((s) => watchedIds.includes(s.id))
     : shows
 
-  const filteredShows = baseShows.filter((show) => {
-    if (filter === 'subbed') return show.subbed
-    if (filter === 'dubbed') return show.dubbed
-    return true
-  })
+  const filteredShows = baseShows
+    // Sub/Dub filter — commented out until reliable dub data source available
+    // .filter((show) => {
+    //   if (filter === 'subbed') return show.subbed
+    //   if (filter === 'dubbed') return show.dubbed
+    //   return true
+    // })
+    .filter((show) => showOngoing ? true : !show.isOngoing)
 
   const showsForDay = filteredShows
     .filter((show) => show.day === selectedDay)
@@ -148,21 +160,36 @@ function Schedule() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-medium text-[#f0ede8] mb-1">Schedule</h1>
-            <p className="text-[13px] text-[#9a9590]">Spring 2026 · Updated daily from all major platforms</p>
+            <p className="text-[13px] text-[#9a9590]">Spring 2026 · All airing shows including long-runners</p>
           </div>
-          <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
-            {(['all', 'subbed', 'dubbed'] as FilterType[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-lg text-sm cursor-pointer transition-all ${
-                  filter === f ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
-                }`}
-                style={filter === f ? { backgroundColor: '#D13924' } : {}}
-              >
-                {f === 'all' ? 'All' : f === 'subbed' ? 'Sub' : 'Dub'}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowOngoing(!showOngoing)}
+              className={`px-4 py-1.5 rounded-lg text-[12px] cursor-pointer transition-all border ${
+                !showOngoing
+                  ? 'border-[#7F77DD] text-[#7F77DD] bg-[#7F77DD]/10'
+                  : 'border-white/7 bg-[#1a1815] text-[#9a9590] hover:text-[#f0ede8]'
+              }`}
+            >
+              {showOngoing ? 'Seasonal only' : 'All shows'}
+            </button>
+
+            {/* Sub/Dub filter — commented out until reliable dub data source available
+            <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
+              {(['all', 'subbed', 'dubbed'] as FilterType[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-4 py-1.5 rounded-lg text-sm cursor-pointer transition-all ${
+                    filter === f ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
+                  }`}
+                  style={filter === f ? { backgroundColor: '#D13924' } : {}}
+                >
+                  {f === 'all' ? 'All' : f === 'subbed' ? 'Sub' : 'Dub'}
+                </button>
+              ))}
+            </div>
+            */}
           </div>
         </div>
 
@@ -193,7 +220,7 @@ function Schedule() {
         {/* Day selector */}
         <div className="grid grid-cols-7 gap-2 mb-8">
           {days.map((day) => {
-            const hasNew = filteredShows.some((s) => s.day === day)
+            const hasShows = filteredShows.some((s) => s.day === day)
             const isToday = day === today
             return (
               <button
@@ -210,9 +237,9 @@ function Schedule() {
                 }`}>
                   {day.slice(0, 3)}{isToday ? ' · Today' : ''}
                 </div>
-                {isLoggedIn && activeTab === 'mySchedule' && hasNew && (
+                {hasShows && (
                   <div className="flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#D13924]" />
+                    <div className={`w-1.5 h-1.5 rounded-full ${selectedDay === day ? 'bg-[#D13924]' : 'bg-white/20'}`} />
                   </div>
                 )}
               </button>
@@ -233,7 +260,7 @@ function Schedule() {
           {showsForDay.length === 0 ? (
             <div className="text-center py-12 bg-[#1a1815] border border-white/7 rounded-xl">
               <p className="text-[#9a9590] text-sm">Nothing airing on {selectedDay}</p>
-              <p className="text-[#5a5650] text-[12px] mt-1">Try a different day or filter</p>
+              <p className="text-[#5a5650] text-[12px] mt-1">Try a different day or toggle to show all shows</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -261,16 +288,19 @@ function Schedule() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-[#f0ede8] truncate mb-1">{show.title}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="text-[13px] font-medium text-[#f0ede8] truncate">{show.title}</div>
+                      {show.isOngoing && (
+                        <span className="text-[9px] text-[#7F77DD] bg-[#7F77DD]/10 border border-[#7F77DD]/25 px-2 py-0.5 rounded-full flex-shrink-0">
+                          Ongoing
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-[#9a9590]">{show.genres.slice(0, 2).join(' · ')}</span>
                       <span className="text-[11px] text-[#5a5650]">·</span>
                       <span className="text-[11px] text-[#9a9590]">{show.studio}</span>
                     </div>
-                  </div>
-
-                  <div className="flex gap-1.5 flex-shrink-0">
-                    <span className="text-[9px] text-[#1D9E75] bg-[#1D9E75]/10 border border-[#1D9E75]/25 px-2 py-0.5 rounded">SUB</span>
                   </div>
 
                   <div className="flex-shrink-0">
@@ -281,12 +311,12 @@ function Schedule() {
                     <button
                       className="text-[11px] font-medium px-3 py-1.5 rounded-full flex-shrink-0 cursor-pointer hover:opacity-90 transition-all"
                       style={{
-                        backgroundColor: addedShows.includes(show.id) ? 'rgba(209,57,36,0.2)' : '#D13924',
-                        color: addedShows.includes(show.id) ? '#D13924' : '#fff'
+                        backgroundColor: watchedIds.includes(show.id) ? 'rgba(209,57,36,0.2)' : '#D13924',
+                        color: watchedIds.includes(show.id) ? '#D13924' : '#fff'
                       }}
                       onClick={(e) => handleAddToList(e, show)}
                     >
-                      {addedShows.includes(show.id) ? '✓ On list' : '+ List'}
+                      {watchedIds.includes(show.id) ? '✓ On list' : '+ List'}
                     </button>
                   )}
                 </div>
@@ -308,7 +338,7 @@ function Schedule() {
         <div>
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-sm font-medium text-[#f0ede8]">
-              {activeTab === 'mySchedule' ? 'All shows on my list' : 'Full season — Spring 2026'}
+              {activeTab === 'mySchedule' ? 'Shows on my list' : 'Full season — Spring 2026'}
             </h2>
             <div className="flex-1 h-px bg-white/5" />
             <span className="text-[11px] text-[#9a9590]">{filteredShows.length} shows</span>
@@ -328,6 +358,13 @@ function Schedule() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1a1815] to-transparent opacity-60" />
+                  {show.isOngoing && (
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[9px] text-[#7F77DD] bg-[#0f0e0d]/80 border border-[#7F77DD]/40 px-2 py-0.5 rounded-full">
+                        Ongoing
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="p-3">
                   <div className="text-[11px] font-medium text-[#f0ede8] truncate mb-1">{show.title}</div>
