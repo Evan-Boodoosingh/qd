@@ -21,7 +21,6 @@ type Show = {
   isOngoing: boolean
 }
 
-// type FilterType = 'all' | 'subbed' | 'dubbed'
 type ScheduleTab = 'mySchedule' | 'fullSchedule'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -62,7 +61,6 @@ const getTodayName = (): string => {
 function Schedule() {
   const [shows, setShows] = useState<Show[]>([])
   const [loading, setLoading] = useState(true)
-  // const [filter, setFilter] = useState<FilterType>('all')
   const [showOngoing, setShowOngoing] = useState(true)
   const [selectedDay, setSelectedDay] = useState(getTodayName())
   const [activeTab, setActiveTab] = useState<ScheduleTab>('fullSchedule')
@@ -122,12 +120,6 @@ function Schedule() {
     : shows
 
   const filteredShows = baseShows
-    // Sub/Dub filter — commented out until reliable dub data source available
-    // .filter((show) => {
-    //   if (filter === 'subbed') return show.subbed
-    //   if (filter === 'dubbed') return show.dubbed
-    //   return true
-    // })
     .filter((show) => showOngoing ? true : !show.isOngoing)
 
   const showsForDay = filteredShows
@@ -138,6 +130,12 @@ function Schedule() {
     })
 
   const today = getTodayName()
+
+  const bottomGridTitle = activeTab === 'mySchedule'
+    ? 'On my list'
+    : showOngoing
+      ? 'All airing shows'
+      : 'Seasonal anime'
 
   if (loading) {
     return (
@@ -160,7 +158,7 @@ function Schedule() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-medium text-[#f0ede8] mb-1">Schedule</h1>
-            <p className="text-[13px] text-[#9a9590]">Spring 2026 · All airing shows including long-runners</p>
+            <p className="text-[13px] text-[#9a9590]">Current anime season · All airing shows including long-runners</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -173,23 +171,6 @@ function Schedule() {
             >
               {showOngoing ? 'Seasonal only' : 'All shows'}
             </button>
-
-            {/* Sub/Dub filter — commented out until reliable dub data source available
-            <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
-              {(['all', 'subbed', 'dubbed'] as FilterType[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-4 py-1.5 rounded-lg text-sm cursor-pointer transition-all ${
-                    filter === f ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
-                  }`}
-                  style={filter === f ? { backgroundColor: '#D13924' } : {}}
-                >
-                  {f === 'all' ? 'All' : f === 'subbed' ? 'Sub' : 'Dub'}
-                </button>
-              ))}
-            </div>
-            */}
           </div>
         </div>
 
@@ -334,12 +315,10 @@ function Schedule() {
           <WeeklyGrid shows={filteredShows} />
         </div>
 
-        {/* Full season grid */}
+        {/* Bottom grid */}
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-sm font-medium text-[#f0ede8]">
-              {activeTab === 'mySchedule' ? 'Shows on my list' : 'Full season — Spring 2026'}
-            </h2>
+            <h2 className="text-sm font-medium text-[#f0ede8]">{bottomGridTitle}</h2>
             <div className="flex-1 h-px bg-white/5" />
             <span className="text-[11px] text-[#9a9590]">{filteredShows.length} shows</span>
           </div>
