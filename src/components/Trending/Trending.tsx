@@ -20,7 +20,7 @@ type Props = {
   onAdded: (showId: number) => void
 }
 
-function Trending({ watchedIds, onAdded }: Props) {
+function Trending({ watchedIds = [], onAdded }: Props) {
   const [shows, setShows] = useState<Show[]>([])
   const [loading, setLoading] = useState(true)
 

@@ -20,7 +20,7 @@ type Props = {
   onAdded: (showId: number) => void
 }
 
-function Hero({ watchedIds, onAdded }: Props) {
+function Hero({ watchedIds = [], onAdded }: Props) {
   const [shows, setShows] = useState<Show[]>([])
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
