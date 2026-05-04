@@ -136,35 +136,59 @@ router.get('/requests', auth, async (req, res) => {
 router.get('/suggested', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
+    const myFriendIds = (user.friends || []).map(id => id.toString())
+
+    // Find friends of friends who aren't already my friends
+    const friendsOfFriends = await User.find({
+      _id: { $in: await User.find({ _id: { $in: user.friends } }).then(friends =>
+        friends.flatMap(f => f.friends || [])
+      )},
+      _id: { $nin: [req.user.userId, ...myFriendIds] }
+    }).select('username displayName friends')
+
+    if (friendsOfFriends.length === 0) return res.json([])
+
+    // Get my watchlist for shared shows ranking
     const myList = await Watchlist.find({ user: req.user.userId })
-    const myShowIds = myList.map(e => e.showId)
+    const myShowIds = new Set(myList.map(e => e.showId))
 
-    if (myShowIds.length === 0) return res.json([])
+    // Count mutual friends and shared shows for each suggestion
+    const scored = friendsOfFriends.map(person => {
+      const mutualCount = (person.friends || []).filter(id =>
+        myFriendIds.includes(id.toString())
+      ).length
 
-    const friendIds = user.friends || []
-    const overlapping = await Watchlist.find({
-      showId: { $in: myShowIds },
-      user: { $nin: [req.user.userId, ...friendIds] }
-    }).populate('user', 'username displayName')
+      return {
+        _id: person._id,
+        username: person.username,
+        displayName: person.displayName,
+        mutualFriends: mutualCount,
+        sharedShows: 0
+      }
+    })
 
-    const scoreMap = {}
-    for (const entry of overlapping) {
-      const uid = entry.user._id.toString()
-      if (!scoreMap[uid]) scoreMap[uid] = { user: entry.user, count: 0 }
-      scoreMap[uid].count++
+    // Add shared shows count
+    const theirLists = await Watchlist.find({
+      user: { $in: friendsOfFriends.map(f => f._id) }
+    })
+
+    for (const entry of theirLists) {
+      const person = scored.find(p => p._id.toString() === entry.user.toString())
+      if (person && myShowIds.has(entry.showId)) {
+        person.sharedShows++
+      }
     }
 
-    const sorted = Object.values(scoreMap)
-      .sort((a, b) => b.count - a.count)
+    // Sort by mutual friends first, then shared shows as tiebreaker
+    const sorted = scored
+      .sort((a, b) => b.mutualFriends - a.mutualFriends || b.sharedShows - a.sharedShows)
       .slice(0, 10)
-      .map(({ user, count }) => ({ ...user.toObject(), sharedShows: count }))
 
     res.json(sorted)
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch suggestions', error: err.message })
   }
 })
-
 // GET /api/friends/compatibility/:username
 // Returns a 0-100 compatibility score based on shared shows and genre overlap
 router.get('/compatibility/:username', auth, async (req, res) => {

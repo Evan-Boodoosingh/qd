@@ -72,4 +72,15 @@ router.delete('/:showId', auth, async (req, res) => {
   }
 })
 
+
+// GET /api/watchlist/user/:userId — get any user's public watchlist
+router.get('/user/:userId', auth, async (req, res) => {
+  try {
+    const watchlist = await Watchlist.find({ user: req.params.userId }).sort({ updatedAt: -1 })
+    res.json(watchlist)
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch watchlist', error: err.message })
+  }
+})
+
 module.exports = router
