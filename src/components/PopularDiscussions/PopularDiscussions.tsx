@@ -55,95 +55,97 @@ function PopularDiscussions() {
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
 
   return (
-    <div className="px-6 py-5 border-t border-white/5">
+    <div className="border-t border-white/5 py-10">
+      <div className="max-w-6xl mx-auto px-6">
 
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-sm font-medium text-[#f0ede8]">Popular discussions</h2>
-          <p className="text-[11px] text-[#9a9590] mt-0.5">What the community is talking about right now</p>
-        </div>
-        <span
-          onClick={() => window.location.href = '/community'}
-          className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
-        >
-          See all threads
-        </span>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        {discussions.map((disc) => (
-          <div
-            key={disc.id}
-            onClick={() => window.location.href = `/thread/${disc.id}`}
-            className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] text-[#9a9590]">Discussion about</div>
-                <div className="text-[12px] text-[#D13924] font-medium truncate">
-                  {disc.show} —{' '}
-                  {disc.threadType === 'episode' && `S${disc.season} Ep ${disc.episode} · `}
-                  {disc.threadType === 'season' && `Season ${disc.season} · `}
-                  {disc.threadTitle}
-                </div>
-              </div>
-
-              <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
-                disc.threadType === 'episode'
-                  ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
-                  : disc.threadType === 'season'
-                  ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
-                  : 'bg-white/5 text-[#9a9590] border-white/10'
-              }`}>
-                {disc.threadType === 'episode' ? 'Episode' : disc.threadType === 'season' ? 'Season' : 'Show'}
-              </span>
-
-              <span className="text-[10px] text-[#5a5650] flex-shrink-0">{disc.timeAgo}</span>
-            </div>
-
-            <div className="text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2">
-              {disc.preview}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <span className="text-[11px] text-[#9a9590]">
-                  <span className="text-[#D13924]">{disc.replies.toLocaleString()}</span> replies
-                </span>
-                <span className="text-[11px] text-[#9a9590]">
-                  <span className="text-[#D13924]">{disc.likes.toLocaleString()}</span> likes
-                </span>
-                <span className="text-[11px] text-[#9a9590]">
-                  {disc.totalParticipants.toLocaleString()} participants
-                </span>
-              </div>
-
-              {user ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    window.location.href = `/thread/${disc.id}`
-                  }}
-                  className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
-                >
-                  Join thread ›
-                </button>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    window.location.href = '/register'
-                  }}
-                  className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
-                >
-                  Sign up to reply ›
-                </button>
-              )}
-            </div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-sm font-medium text-[#f0ede8]">Popular discussions</h2>
+            <p className="text-[11px] text-[#9a9590] mt-0.5">What the community is talking about right now</p>
           </div>
-        ))}
-      </div>
+          <span
+            onClick={() => window.location.href = '/community'}
+            className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
+          >
+            See all threads
+          </span>
+        </div>
 
+        <div className="flex flex-col gap-3">
+          {discussions.map((disc) => (
+            <div
+              key={disc.id}
+              onClick={() => window.location.href = `/thread/${disc.id}`}
+              className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] text-[#9a9590]">Discussion about</div>
+                  <div className="text-[12px] text-[#D13924] font-medium truncate">
+                    {disc.show} —{' '}
+                    {disc.threadType === 'episode' && `S${disc.season} Ep ${disc.episode} · `}
+                    {disc.threadType === 'season' && `Season ${disc.season} · `}
+                    {disc.threadTitle}
+                  </div>
+                </div>
+
+                <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
+                  disc.threadType === 'episode'
+                    ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
+                    : disc.threadType === 'season'
+                    ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
+                    : 'bg-white/5 text-[#9a9590] border-white/10'
+                }`}>
+                  {disc.threadType === 'episode' ? 'Episode' : disc.threadType === 'season' ? 'Season' : 'Show'}
+                </span>
+
+                <span className="text-[10px] text-[#5a5650] flex-shrink-0">{disc.timeAgo}</span>
+              </div>
+
+              <div className="text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2">
+                {disc.preview}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-[11px] text-[#9a9590]">
+                    <span className="text-[#D13924]">{disc.replies.toLocaleString()}</span> replies
+                  </span>
+                  <span className="text-[11px] text-[#9a9590]">
+                    <span className="text-[#D13924]">{disc.likes.toLocaleString()}</span> likes
+                  </span>
+                  <span className="text-[11px] text-[#9a9590]">
+                    {disc.totalParticipants.toLocaleString()} participants
+                  </span>
+                </div>
+
+                {user ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.location.href = `/thread/${disc.id}`
+                    }}
+                    className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
+                  >
+                    Join thread ›
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.location.href = '/register'
+                    }}
+                    className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
+                  >
+                    Sign up to reply ›
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
     </div>
   )
 }
