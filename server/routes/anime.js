@@ -22,7 +22,6 @@ router.get('/season', async (req, res) => {
       return res.json(cachedSeason)
     }
 
-    // Fetch seasonal premieres and ongoing shows in parallel
     const [seasonalRes, ongoingRes] = await Promise.all([
       fetch('https://api.jikan.moe/v4/seasons/now?limit=25'),
       fetch('https://api.jikan.moe/v4/anime?status=airing&type=tv&order_by=members&sort=desc&limit=25')
@@ -56,7 +55,6 @@ router.get('/season', async (req, res) => {
     const seasonal = (seasonalData.data || []).map((s) => mapShow(s, false))
     const ongoing = (ongoingData.data || []).map((s) => mapShow(s, true))
 
-    // Merge and deduplicate by id — seasonal takes priority over ongoing
     const seenIds = new Set()
     const merged = []
 
@@ -97,18 +95,23 @@ router.get('/show/:id', async (req, res) => {
 
     const show = showData.data
 
+    // Fetch only page 1 of episodes on initial load
     let episodes = []
+    let totalEpisodePages = 1
     try {
       const now = Date.now()
-      if (episodeCache[id] && now - episodeCache[id].time < EPISODE_CACHE_DURATION) {
-        episodes = episodeCache[id].data
+      const cacheKey = `${id}-page-1`
+      if (episodeCache[cacheKey] && now - episodeCache[cacheKey].time < EPISODE_CACHE_DURATION) {
+        episodes = episodeCache[cacheKey].data
+        totalEpisodePages = episodeCache[cacheKey].totalPages
       } else {
         await new Promise(resolve => setTimeout(resolve, 500))
-        const episodesRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes`)
+        const episodesRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes?page=1`)
         const episodesData = await episodesRes.json()
         episodes = episodesData.data || []
+        totalEpisodePages = episodesData.pagination?.last_visible_page || 1
         if (episodes.length > 0) {
-          episodeCache[id] = { data: episodes, time: now }
+          episodeCache[cacheKey] = { data: episodes, totalPages: totalEpisodePages, time: now }
         }
       }
     } catch {
@@ -164,17 +167,55 @@ router.get('/show/:id', async (req, res) => {
       })) || [],
       openingThemes: show.theme?.openings || [],
       endingThemes: show.theme?.endings || [],
-      episodeList: episodes.map((ep) => ({
+      episodeList: episodes
+        .map((ep) => ({
+          number: ep.mal_id,
+          title: ep.title || `Episode ${ep.mal_id}`,
+          airDate: ep.aired || null,
+          filler: ep.filler || false,
+          recap: ep.recap || false,
+        }))
+        .sort((a, b) => a.number - b.number),
+      totalEpisodePages,
+    })
+  } catch (err) {
+    console.error('SHOW ERROR:', err)
+    res.status(500).json({ message: 'Failed to fetch show data', error: err.message })
+  }
+})
+
+// GET /api/anime/show/:id/episodes?page=2 — fetch a specific episode page on demand
+router.get('/show/:id/episodes', async (req, res) => {
+  try {
+    const { id } = req.params
+    const page = parseInt(req.query.page) || 1
+    const cacheKey = `${id}-page-${page}`
+    const now = Date.now()
+
+    if (episodeCache[cacheKey] && now - episodeCache[cacheKey].time < EPISODE_CACHE_DURATION) {
+      return res.json({ episodes: episodeCache[cacheKey].data, page })
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 500))
+    const episodesRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes?page=${page}`)
+    const episodesData = await episodesRes.json()
+    const episodes = (episodesData.data || [])
+      .map((ep) => ({
         number: ep.mal_id,
         title: ep.title || `Episode ${ep.mal_id}`,
         airDate: ep.aired || null,
         filler: ep.filler || false,
         recap: ep.recap || false,
-      })),
-    })
+      }))
+      .sort((a, b) => a.number - b.number)
+
+    if (episodes.length > 0) {
+      episodeCache[cacheKey] = { data: episodes, time: now }
+    }
+
+    res.json({ episodes, page })
   } catch (err) {
-    console.error('SHOW ERROR:', err)
-    res.status(500).json({ message: 'Failed to fetch show data', error: err.message })
+    res.status(500).json({ message: 'Failed to fetch episodes', error: err.message })
   }
 })
 

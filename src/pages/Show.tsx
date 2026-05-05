@@ -81,6 +81,7 @@ type Show = {
   openingThemes: string[]
   endingThemes: string[]
   episodeList: Episode[]
+  totalEpisodePages: number
 }
 
 const timeAgo = (dateString: string) => {
@@ -118,6 +119,9 @@ function Show() {
   const [onList, setOnList] = useState(false)
   const [savingStatus, setSavingStatus] = useState(false)
   const [activeTab, setActiveTab] = useState<'episodes' | 'discussions' | 'related'>('episodes')
+  const [episodePage, setEpisodePage] = useState(1)
+  const [episodePages, setEpisodePages] = useState<Record<number, Episode[]>>({})
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false)
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const isLoggedIn = !!user
@@ -129,6 +133,10 @@ function Show() {
       .then((res) => res.json())
       .then((data) => {
         setShow(data)
+        // Store page 1 episodes from initial load
+        if (data.episodeList?.length > 0) {
+          setEpisodePages({ 1: data.episodeList })
+        }
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -152,13 +160,28 @@ function Show() {
     }
   }, [id])
 
+  const handlePageChange = async (page: number) => {
+    setEpisodePage(page)
+    if (episodePages[page]) return // already cached
+
+    setLoadingEpisodes(true)
+    try {
+      const res = await fetch(`http://localhost:3001/api/anime/show/${id}/episodes?page=${page}`)
+      const data = await res.json()
+      if (data.episodes) {
+        setEpisodePages(prev => ({ ...prev, [page]: data.episodes }))
+      }
+    } catch {}
+    finally {
+      setLoadingEpisodes(false)
+    }
+  }
+
   const handleAddToList = async () => {
     if (!show) return
     try {
-      const airingEpisode = show.airing
-        ? show.episodeList.length || null
-        : show.episodes
-
+      const currentEps = episodePages[1] || []
+      const airingEpisode = show.airing ? currentEps.length || null : show.episodes
       await addToWatchlist({
         showId: show.id,
         showName: show.title,
@@ -188,8 +211,9 @@ function Show() {
 
   const handleEpisodeChange = async (newEp: number) => {
     if (!show) return
+    const firstPageEps = episodePages[1] || []
     const cap = show.airing
-      ? (show.episodeList.length || show.episodes || 999)
+      ? (firstPageEps.length || show.episodes || 999)
       : (show.episodes || 999)
     const capped = Math.min(Math.max(0, newEp), cap)
     setCurrentEpisode(capped)
@@ -220,8 +244,11 @@ function Show() {
     )
   }
 
+  const totalEpisodePages = show.totalEpisodePages || 1
+  const currentPageEpisodes = episodePages[episodePage] || []
+  const firstPageEps = episodePages[1] || []
   const episodeCap = show.airing
-    ? (show.episodeList.length || show.episodes || null)
+    ? (firstPageEps.length || show.episodes || null)
     : show.episodes
 
   return (
@@ -394,48 +421,90 @@ function Show() {
             {/* Episodes tab */}
             {activeTab === 'episodes' && (
               <div className="bg-[#1a1815] border border-white/7 rounded-xl p-5">
-                {show.episodeList.length === 0 ? (
+                {currentPageEpisodes.length === 0 && !loadingEpisodes ? (
                   <p className="text-[13px] text-[#5a5650] text-center py-6">Episode list not available yet</p>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    {show.episodeList.map((ep) => {
-                      const watched = watchStatus === 'watching' && currentEpisode >= ep.number
-                      return (
-                        <div
-                          key={ep.number}
-                          onClick={() => window.location.href = `/show/${show.id}/episode/${ep.number}`}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
-                            watched ? 'border-[#D13924]/20 bg-[#D13924]/05 hover:border-[#D13924]/40' : 'border-white/5 hover:border-white/15'
-                          }`}
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[12px] text-[#9a9590]">
+                        {currentPageEpisodes.length > 0 ? (
+                          <>
+                            Episodes{' '}
+                            <span className="text-[#f0ede8]">
+                              {currentPageEpisodes[0]?.number}–{currentPageEpisodes[currentPageEpisodes.length - 1]?.number}
+                            </span>
+                            {show.episodes && (
+                              <> of <span className="text-[#f0ede8]">{show.episodes}</span></>
+                            )}
+                          </>
+                        ) : 'Loading...'}
+                      </span>
+
+                      {totalEpisodePages > 1 && (
+                        <select
+                          value={episodePage}
+                          onChange={(e) => handlePageChange(Number(e.target.value))}
+                          className="bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-[#f0ede8] cursor-pointer focus:outline-none focus:border-[#D13924] transition-all"
                         >
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0"
-                            style={{
-                              backgroundColor: watched ? '#D13924' : 'rgba(255,255,255,0.08)',
-                              color: watched ? '#fff' : '#9a9590',
-                            }}
-                          >
-                            {ep.number}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[12px] text-[#f0ede8] truncate">{ep.title}</div>
-                            {ep.airDate && (
-                              <div className="text-[10px] text-[#5a5650] mt-0.5">{formatAirDate(ep.airDate)}</div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {ep.filler && (
-                              <span className="text-[9px] text-[#9a9590] bg-white/5 px-2 py-0.5 rounded">Filler</span>
-                            )}
-                            {ep.recap && (
-                              <span className="text-[9px] text-[#9a9590] bg-white/5 px-2 py-0.5 rounded">Recap</span>
-                            )}
-                            <span className="text-[10px] text-[#D13924]">View →</span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                          {Array.from({ length: totalEpisodePages }, (_, i) => {
+                            const start = i * 100 + 1
+                            const end = (i + 1) * 100
+                            return (
+                              <option key={i + 1} value={i + 1}>
+                                Episodes {start}–{end}
+                              </option>
+                            )
+                          })}
+                        </select>
+                      )}
+                    </div>
+
+                    {loadingEpisodes ? (
+                      <div className="text-center py-12">
+                        <p className="text-[#9a9590] text-sm animate-pulse">Loading episodes...</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {currentPageEpisodes.map((ep) => {
+                          const watched = watchStatus === 'watching' && currentEpisode >= ep.number
+                          return (
+                            <div
+                              key={ep.number}
+                              onClick={() => window.location.href = `/show/${show.id}/episode/${ep.number}`}
+                              className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                                watched ? 'border-[#D13924]/20 bg-[#D13924]/05 hover:border-[#D13924]/40' : 'border-white/5 hover:border-white/15'
+                              }`}
+                            >
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0"
+                                style={{
+                                  backgroundColor: watched ? '#D13924' : 'rgba(255,255,255,0.08)',
+                                  color: watched ? '#fff' : '#9a9590',
+                                }}
+                              >
+                                {ep.number}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[12px] text-[#f0ede8] truncate">{ep.title}</div>
+                                {ep.airDate && (
+                                  <div className="text-[10px] text-[#5a5650] mt-0.5">{formatAirDate(ep.airDate)}</div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {ep.filler && (
+                                  <span className="text-[9px] text-[#9a9590] bg-white/5 px-2 py-0.5 rounded">Filler</span>
+                                )}
+                                {ep.recap && (
+                                  <span className="text-[9px] text-[#9a9590] bg-white/5 px-2 py-0.5 rounded">Recap</span>
+                                )}
+                                <span className="text-[10px] text-[#D13924]">View →</span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
