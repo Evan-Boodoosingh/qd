@@ -122,6 +122,7 @@ function Show() {
   const [episodePage, setEpisodePage] = useState(1)
   const [episodePages, setEpisodePages] = useState<Record<number, Episode[]>>({})
   const [loadingEpisodes, setLoadingEpisodes] = useState(false)
+  const [hideFiller, setHideFiller] = useState(false)
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const isLoggedIn = !!user
@@ -133,7 +134,6 @@ function Show() {
       .then((res) => res.json())
       .then((data) => {
         setShow(data)
-        // Store page 1 episodes from initial load
         if (data.episodeList?.length > 0) {
           setEpisodePages({ 1: data.episodeList })
         }
@@ -162,7 +162,7 @@ function Show() {
 
   const handlePageChange = async (page: number) => {
     setEpisodePage(page)
-    if (episodePages[page]) return // already cached
+    if (episodePages[page]) return
 
     setLoadingEpisodes(true)
     try {
@@ -171,8 +171,7 @@ function Show() {
       if (data.episodes) {
         setEpisodePages(prev => ({ ...prev, [page]: data.episodes }))
       }
-    } catch {}
-    finally {
+    } catch {} finally {
       setLoadingEpisodes(false)
     }
   }
@@ -251,11 +250,17 @@ function Show() {
     ? (firstPageEps.length || show.episodes || null)
     : show.episodes
 
+  const displayedEpisodes = hideFiller
+    ? currentPageEpisodes.filter(ep => !ep.filler)
+    : currentPageEpisodes
+
+  const hasFillerOnPage = currentPageEpisodes.some(ep => ep.filler)
+
   return (
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
 
-      {/* Hero */}
+     {/* Hero */}
       <div className="relative h-[240px] overflow-hidden bg-[#1a1815]">
         <img
           src={proxyImage(show.image)}
@@ -264,8 +269,20 @@ function Show() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f0e0d] via-[#0f0e0d]/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0f0e0d] via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 px-8 pb-6 max-w-3xl">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
+        
+        {/* Centered Content Container */}
+        <div className="absolute bottom-0 left-0 right-0 px-8 pb-6 flex flex-col items-center text-center">
+          
+          {/* 1. Main Title */}
+          <h1 className="text-3xl font-medium text-[#f0ede8] mb-1">{show.title}</h1>
+          
+          {/* 2. Japanese Title */}
+          {show.titleJapanese && (
+            <p className="text-[11px] text-[#5a5650] mb-3">{show.titleJapanese}</p>
+          )}
+
+          {/* 3. Genres & Rating - Now below the titles */}
+          <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
             {show.genres.slice(0, 3).map((g) => (
               <span key={g} className="text-[10px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 px-2 py-0.5 rounded-full">
                 {g}
@@ -277,16 +294,15 @@ function Show() {
               </span>
             )}
           </div>
-          <h1 className="text-3xl font-medium text-[#f0ede8] mb-1">{show.title}</h1>
-          {show.titleJapanese && (
-            <p className="text-[11px] text-[#5a5650] mb-1">{show.titleJapanese}</p>
-          )}
+          
+          {/* 4. Studio & Airing Status */}
           <p className="text-[12px] text-[#9a9590]">
             {show.studio} · {show.airing ? `Airing · ${show.day}` : show.status}
           </p>
         </div>
       </div>
 
+      
       {/* Body */}
       <div className="max-w-6xl mx-auto px-8 py-8">
         <div className="flex gap-6 items-start">
@@ -440,23 +456,38 @@ function Show() {
                         ) : 'Loading...'}
                       </span>
 
-                      {totalEpisodePages > 1 && (
-                        <select
-                          value={episodePage}
-                          onChange={(e) => handlePageChange(Number(e.target.value))}
-                          className="bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-[#f0ede8] cursor-pointer focus:outline-none focus:border-[#D13924] transition-all"
-                        >
-                          {Array.from({ length: totalEpisodePages }, (_, i) => {
-                            const start = i * 100 + 1
-                            const end = (i + 1) * 100
-                            return (
-                              <option key={i + 1} value={i + 1}>
-                                Episodes {start}–{end}
-                              </option>
-                            )
-                          })}
-                        </select>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {hasFillerOnPage && (
+                          <button
+                            onClick={() => setHideFiller(prev => !prev)}
+                            className={`text-[11px] px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${
+                              hideFiller
+                                ? 'border-[#D13924] text-[#D13924] bg-[#D13924]/10'
+                                : 'border-white/10 text-[#9a9590] hover:text-[#f0ede8]'
+                            }`}
+                          >
+                            {hideFiller ? 'Canon only' : 'Hide filler'}
+                          </button>
+                        )}
+
+                        {totalEpisodePages > 1 && (
+                          <select
+                            value={episodePage}
+                            onChange={(e) => handlePageChange(Number(e.target.value))}
+                            className="bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-[#f0ede8] cursor-pointer focus:outline-none focus:border-[#D13924] transition-all"
+                          >
+                            {Array.from({ length: totalEpisodePages }, (_, i) => {
+                              const start = i * 100 + 1
+                              const end = (i + 1) * 100
+                              return (
+                                <option key={i + 1} value={i + 1}>
+                                  Episodes {start}–{end}
+                                </option>
+                              )
+                            })}
+                          </select>
+                        )}
+                      </div>
                     </div>
 
                     {loadingEpisodes ? (
@@ -465,7 +496,7 @@ function Show() {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
-                        {currentPageEpisodes.map((ep) => {
+                        {displayedEpisodes.map((ep) => {
                           const watched = watchStatus === 'watching' && currentEpisode >= ep.number
                           return (
                             <div
