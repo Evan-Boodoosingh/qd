@@ -1,58 +1,52 @@
-type PopularDiscussion = {
-  id: string
+import { useState, useEffect } from 'react'
+
+type Thread = {
+  _id: string
   show: string
   threadTitle: string
   threadType: 'episode' | 'season' | 'show'
   season?: number
   episode?: number
-  preview: string
-  replies: number
-  likes: number
-  timeAgo: string
-  totalParticipants: number
+  originalPost: string
+  replies: any[]
+  likes: string[]
+  hasSpoiler: boolean
+  username: string
+  createdAt: string
 }
 
-const discussions: PopularDiscussion[] = [
-  {
-    id: '1',
-    show: 'Frieren S2',
-    threadTitle: 'The writing in this show is on another level',
-    threadType: 'show',
-    preview: 'I\'ve watched a lot of anime but nothing hits quite like Frieren. The way it handles grief, time, and connection without ever being heavy handed is just masterful storytelling.',
-    replies: 847,
-    likes: 3200,
-    timeAgo: '2h ago',
-    totalParticipants: 412,
-  },
-  {
-    id: '2',
-    show: 'Solo Leveling S3',
-    threadTitle: 'Ep 6 had the best animation of the entire season',
-    threadType: 'episode',
-    season: 3,
-    episode: 6,
-    preview: 'The fight sequence at the 14 minute mark is some of the best sakuga I\'ve seen in years. A-1 Pictures absolutely went all out for this one.',
-    replies: 1203,
-    likes: 5800,
-    timeAgo: '4h ago',
-    totalParticipants: 891,
-  },
-  {
-    id: '3',
-    show: 'Demon Slayer S5',
-    threadTitle: 'Is this the best season Ufotable has ever produced?',
-    threadType: 'season',
-    season: 5,
-    preview: 'Every episode this season has been a visual masterpiece. The breathing technique animations have evolved so much from Season 1. Genuine question — does any other studio come close right now?',
-    replies: 2104,
-    likes: 8900,
-    timeAgo: '6h ago',
-    totalParticipants: 1247,
-  },
-]
+const timeAgo = (dateString: string) => {
+  const diff = Date.now() - new Date(dateString).getTime()
+  const mins = Math.floor(diff / 1000 / 60)
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
+}
 
 function PopularDiscussions() {
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [loading, setLoading] = useState(true)
+
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/threads')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const sorted = data
+            .sort((a, b) => b.replies.length - a.replies.length)
+            .slice(0, 3)
+          setThreads(sorted)
+        }
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) return null
+  if (threads.length === 0) return null
 
   return (
     <div className="border-t border-white/5 py-10">
@@ -72,58 +66,58 @@ function PopularDiscussions() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {discussions.map((disc) => (
+          {threads.map((thread) => (
             <div
-              key={disc.id}
-              onClick={() => window.location.href = `/thread/${disc.id}`}
+              key={thread._id}
+              onClick={() => window.location.href = `/thread/${thread._id}`}
               className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] text-[#9a9590]">Discussion about</div>
                   <div className="text-[12px] text-[#D13924] font-medium truncate">
-                    {disc.show} —{' '}
-                    {disc.threadType === 'episode' && `S${disc.season} Ep ${disc.episode} · `}
-                    {disc.threadType === 'season' && `Season ${disc.season} · `}
-                    {disc.threadTitle}
+                    {thread.show} —{' '}
+                    {thread.threadType === 'episode' && `S${thread.season} Ep ${thread.episode} · `}
+                    {thread.threadType === 'season' && `Season ${thread.season} · `}
+                    {thread.threadTitle}
                   </div>
                 </div>
 
                 <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
-                  disc.threadType === 'episode'
+                  thread.threadType === 'episode'
                     ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
-                    : disc.threadType === 'season'
+                    : thread.threadType === 'season'
                     ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
                     : 'bg-white/5 text-[#9a9590] border-white/10'
                 }`}>
-                  {disc.threadType === 'episode' ? 'Episode' : disc.threadType === 'season' ? 'Season' : 'Show'}
+                  {thread.threadType === 'episode' ? 'Episode' : thread.threadType === 'season' ? 'Season' : 'Show'}
                 </span>
 
-                <span className="text-[10px] text-[#5a5650] flex-shrink-0">{disc.timeAgo}</span>
+                <span className="text-[10px] text-[#5a5650] flex-shrink-0">{timeAgo(thread.createdAt)}</span>
               </div>
 
-              <div className="text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2">
-                {disc.preview}
+              <div className={`text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2 ${
+                thread.hasSpoiler ? 'blur-sm select-none' : ''
+              }`}>
+                {thread.originalPost}
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <span className="text-[11px] text-[#9a9590]">
-                    <span className="text-[#D13924]">{disc.replies.toLocaleString()}</span> replies
+                    <span className="text-[#D13924]">{thread.replies.length}</span> replies
                   </span>
                   <span className="text-[11px] text-[#9a9590]">
-                    <span className="text-[#D13924]">{disc.likes.toLocaleString()}</span> likes
+                    <span className="text-[#D13924]">{thread.likes.length}</span> likes
                   </span>
-                  <span className="text-[11px] text-[#9a9590]">
-                    {disc.totalParticipants.toLocaleString()} participants
-                  </span>
+                  <span className="text-[11px] text-[#9a9590]">by @{thread.username}</span>
                 </div>
 
                 {user ? (
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      window.location.href = `/thread/${disc.id}`
+                      window.location.href = `/thread/${thread._id}`
                     }}
                     className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
                   >

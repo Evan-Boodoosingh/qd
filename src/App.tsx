@@ -43,7 +43,7 @@ function HomePage() {
       <Calendar watchedIds={watchedIds} onAdded={handleAddedToList} />
       <Friends />
       <Discussions />
-      <Liked />
+      {/* <Liked /> */}
       <Trending watchedIds={watchedIds} onAdded={handleAddedToList} />
       <PopularDiscussions />
     </div>

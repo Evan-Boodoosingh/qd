@@ -14,6 +14,7 @@ const replySchema = new mongoose.Schema({
 const threadSchema = new mongoose.Schema({
   show: { type: String, required: true },
   showId: { type: Number },
+  genres: [{ type: String }],
   threadTitle: { type: String, required: true },
   threadType: { type: String, enum: ['episode', 'season', 'show'], required: true },
   season: { type: Number },

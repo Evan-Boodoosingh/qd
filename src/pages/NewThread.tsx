@@ -12,12 +12,24 @@ function NewThread() {
   const [hasSpoiler, setHasSpoiler] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [genres, setGenres] = useState<string[]>([])
 
   const showId = searchParams.get('showId')
   const showName = searchParams.get('showName')
   const episode = searchParams.get('episode')
 
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+
+  // Fetch genres from show data when showId is available
+  useEffect(() => {
+    if (!showId) return
+    fetch(`http://localhost:3001/api/anime/show/${showId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.genres) setGenres(data.genres)
+      })
+      .catch(() => {})
+  }, [showId])
 
   const handleSubmit = async () => {
     if (!title.trim() || !body.trim()) {
@@ -42,6 +54,7 @@ function NewThread() {
         body: JSON.stringify({
           show: showName,
           showId: Number(showId),
+          genres,
           threadTitle: title,
           threadType,
           episode: episode ? Number(episode) : undefined,
@@ -66,7 +79,6 @@ function NewThread() {
 
       <div className="max-w-2xl mx-auto px-6 py-8">
 
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl font-medium text-[#f0ede8] mb-1">Start a thread</h1>
           {showName && (
@@ -142,14 +154,12 @@ function NewThread() {
             </label>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
               <p className="text-[12px] text-red-400">{error}</p>
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex items-center justify-between">
             <button
               onClick={() => window.history.back()}
