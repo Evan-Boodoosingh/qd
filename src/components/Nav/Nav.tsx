@@ -22,7 +22,7 @@ function Nav() {
       <div className="flex items-center gap-6">
         <button
           type="button"
-          onClick={() => (window.location.href = "/home")}
+          onClick={() => (window.location.href = "/")}
           className={`text-md cursor-pointer transition ${
             isActive("/home") || isActive("/")
               ? "text-[#D13924]"
