@@ -10,6 +10,7 @@ type Reply = {
   content: string
   hasSpoiler: boolean
   likes: string[]
+  spoilerFlags: string[]
   createdAt: string
   replies?: Reply[]
 }
@@ -25,6 +26,7 @@ type Thread = {
   username: string
   originalPost: string
   replies: Reply[]
+  likes: string[]
   createdAt: string
 }
 
@@ -53,6 +55,9 @@ function Thread() {
   const [submitting, setSubmitting] = useState(false)
   const [revealedSpoilers, setRevealedSpoilers] = useState<string[]>([])
   const [showOriginal, setShowOriginal] = useState(true)
+  const [likedReplies, setLikedReplies] = useState<Set<string>>(new Set())
+  const [flaggedReplies, setFlaggedReplies] = useState<Set<string>>(new Set())
+  const [reportedReplies, setReportedReplies] = useState<Set<string>>(new Set())
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
@@ -65,6 +70,15 @@ function Thread() {
       .then((res) => res.json())
       .then((data) => {
         setThread(data)
+        // Initialize liked replies based on current user
+        if (parsedUser && data.replies) {
+          const liked = new Set<string>(
+            data.replies
+              .filter((r: Reply) => r.likes.includes(parsedUser.id))
+              .map((r: Reply) => r._id)
+          )
+          setLikedReplies(liked)
+        }
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -100,7 +114,71 @@ function Thread() {
     }
   }
 
-  const isRevealed = (id: string) => revealedSpoilers.includes(id)
+  const handleLike = async (replyId: string) => {
+    if (!token || !id) return
+    const alreadyLiked = likedReplies.has(replyId)
+
+    // Optimistic update
+    setLikedReplies(prev => {
+      const next = new Set(prev)
+      alreadyLiked ? next.delete(replyId) : next.add(replyId)
+      return next
+    })
+    setThread(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        replies: prev.replies.map(r =>
+          r._id === replyId
+            ? {
+                ...r,
+                likes: alreadyLiked
+                  ? r.likes.filter(l => l !== parsedUser?.id)
+                  : [...r.likes, parsedUser?.id]
+              }
+            : r
+        )
+      }
+    })
+
+    try {
+      await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/like`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch {
+      // Revert on failure
+      setLikedReplies(prev => {
+        const next = new Set(prev)
+        alreadyLiked ? next.add(replyId) : next.delete(replyId)
+        return next
+      })
+    }
+  }
+
+  const handleFlag = async (replyId: string) => {
+    if (!token || !id || flaggedReplies.has(replyId)) return
+    setFlaggedReplies(prev => new Set(prev).add(replyId))
+    try {
+      await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/flag`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch {}
+  }
+
+  const handleReport = async (replyId: string) => {
+    if (!token || !id || reportedReplies.has(replyId)) return
+    setReportedReplies(prev => new Set(prev).add(replyId))
+    try {
+      await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/report`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch {}
+  }
+
+  const isRevealed = (replyId: string) => revealedSpoilers.includes(replyId)
 
   if (loading) {
     return (
@@ -129,6 +207,9 @@ function Thread() {
   const renderReply = (reply: Reply, isNested = false) => {
     const spoilerActive = reply.hasSpoiler && !isRevealed(reply._id)
     const color = getColor(reply.username)
+    const liked = likedReplies.has(reply._id)
+    const flagged = flaggedReplies.has(reply._id)
+    const reported = reportedReplies.has(reply._id)
 
     return (
       <div key={reply._id} className={`${isNested ? 'ml-10 border-l border-white/5 pl-4' : ''}`}>
@@ -170,23 +251,46 @@ function Thread() {
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-[11px] text-[#9a9590]">♥ {reply.likes.length}</span>
+              {/* Like button */}
+              <button
+                onClick={() => isLoggedIn && handleLike(reply._id)}
+                className={`flex items-center gap-1 text-[11px] transition-all ${
+                  liked
+                    ? 'text-[#D13924] cursor-pointer'
+                    : isLoggedIn
+                    ? 'text-[#9a9590] hover:text-[#D13924] cursor-pointer'
+                    : 'text-[#9a9590] cursor-default'
+                }`}
+              >
+                <span>{liked ? '♥' : '♡'}</span>
+                <span>{reply.likes.length}</span>
+              </button>
 
-              {isLoggedIn && (
-                <button className="text-[11px] text-[#9a9590] hover:text-[#f0ede8] cursor-pointer transition-all">
-                  Reply
-                </button>
-              )}
-
+              {/* Flag spoiler */}
               {isLoggedIn && !reply.hasSpoiler && (
-                <button className="text-[11px] text-[#9a9590]/60 hover:text-yellow-400 cursor-pointer transition-all">
-                  ⚠ Flag spoiler
+                <button
+                  onClick={() => handleFlag(reply._id)}
+                  className={`text-[11px] transition-all cursor-pointer ${
+                    flagged
+                      ? 'text-yellow-400'
+                      : 'text-[#9a9590]/60 hover:text-yellow-400'
+                  }`}
+                >
+                  {flagged ? '⚠ Flagged' : '⚠ Flag spoiler'}
                 </button>
               )}
 
+              {/* Report */}
               {isLoggedIn && (
-                <button className="text-[11px] text-[#9a9590]/60 hover:text-red-400 cursor-pointer transition-all">
-                  🚩 Report
+                <button
+                  onClick={() => handleReport(reply._id)}
+                  className={`text-[11px] transition-all cursor-pointer ${
+                    reported
+                      ? 'text-[#5a5650]'
+                      : 'text-[#9a9590]/60 hover:text-red-400'
+                  }`}
+                >
+                  {reported ? 'Reported' : '🚩 Report'}
                 </button>
               )}
             </div>

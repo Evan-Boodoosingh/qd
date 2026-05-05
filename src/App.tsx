@@ -1,40 +1,40 @@
-import { useState, useEffect } from 'react'
-import { Routes, Route } from "react-router-dom"
-import Nav from "./components/Nav/Nav"
-import Calendar from "./components/Calendar/Calendar"
-import Friends from "./components/Friends/Friends"
-import Discussions from "./components/Discussions/Discussions"
-import Liked from "./components/Liked/Liked"
-import Login from "./pages/Login"
-import Register from "./pages/Register"
-import ProtectedRoute from "./components/ProtectedRoute"
-import Landing from './pages/Landing'
-import Trending from "./components/Trending/Trending"
-import PopularDiscussions from "./components/PopularDiscussions/PopularDiscussions"
-import MyList from "./pages/MyList"
-import Profile from "./pages/Profile"
-import FriendsPage from "./pages/Friends"
-import Schedule from "./pages/Schedule"
-import Community from "./pages/Community"
-import Show from "./pages/Show"
-import Thread from "./pages/Thread"
-import Episode from "./pages/Episode"
-import NewThread from "./pages/NewThread"
-import Hero from "./components/Hero/Hero"
-import { fetchWatchlist } from './services/watchlist'
+import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import Nav from "./components/Nav/Nav";
+import Calendar from "./components/Calendar/Calendar";
+import Friends from "./components/Friends/Friends";
+import Discussions from "./components/Discussions/Discussions";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Landing from "./pages/Landing";
+import Trending from "./components/Trending/Trending";
+import PopularDiscussions from "./components/PopularDiscussions/PopularDiscussions";
+import MyList from "./pages/MyList";
+import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import FriendsPage from "./pages/Friends";
+import Schedule from "./pages/Schedule";
+import Community from "./pages/Community";
+import Show from "./pages/Show";
+import Thread from "./pages/Thread";
+import Episode from "./pages/Episode";
+import NewThread from "./pages/NewThread";
+import Hero from "./components/Hero/Hero";
+import { fetchWatchlist } from "./services/watchlist";
 
 function HomePage() {
-  const [watchedIds, setWatchedIds] = useState<number[]>([])
+  const [watchedIds, setWatchedIds] = useState<number[]>([]);
 
   useEffect(() => {
     fetchWatchlist()
       .then((data) => setWatchedIds(data.map((e: any) => e.showId)))
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   const handleAddedToList = (showId: number) => {
-    setWatchedIds(prev => [...prev, showId])
-  }
+    setWatchedIds((prev) => [...prev, showId]);
+  };
 
   return (
     <div className="bg-[#0f0e0d] min-h-screen text-white">
@@ -47,7 +47,7 @@ function HomePage() {
       <Trending watchedIds={watchedIds} onAdded={handleAddedToList} />
       <PopularDiscussions />
     </div>
-  )
+  );
 }
 
 function App() {
@@ -78,6 +78,14 @@ function App() {
         }
       />
       <Route
+        path="/profile/edit"
+        element={
+          <ProtectedRoute>
+            <EditProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/profile/:username"
         element={
           <ProtectedRoute>
@@ -93,9 +101,16 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/thread/new" element={<ProtectedRoute><NewThread /></ProtectedRoute>} />
+      <Route
+        path="/thread/new"
+        element={
+          <ProtectedRoute>
+            <NewThread />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;
