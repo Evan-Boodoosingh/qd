@@ -22,6 +22,7 @@ import Episode from "./pages/Episode";
 import NewThread from "./pages/NewThread";
 import Hero from "./components/Hero/Hero";
 import { fetchWatchlist } from "./services/watchlist";
+import Search from "./pages/Search";
 
 function HomePage() {
   const [watchedIds, setWatchedIds] = useState<number[]>([]);
@@ -61,6 +62,7 @@ function App() {
       <Route path="/show/:id" element={<Show />} />
       <Route path="/thread/:id" element={<Thread />} />
       <Route path="/show/:id/episode/:ep" element={<Episode />} />
+      <Route path="/search" element={<Search />} />
       <Route
         path="/home"
         element={

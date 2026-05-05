@@ -145,4 +145,23 @@ router.patch("/me", auth, async (req, res) => {
   }
 });
 
+
+// GET /api/users/search?q= — search users by username or displayName
+router.get('/search', auth, async (req, res) => {
+  try {
+    const { q } = req.query
+    if (!q) return res.json([])
+    const users = await User.find({
+      $or: [
+        { username: { $regex: q, $options: 'i' } },
+        { displayName: { $regex: q, $options: 'i' } },
+      ]
+    }).select('username displayName').limit(10)
+    res.json(users)
+  } catch (err) {
+    res.status(500).json({ message: 'Search failed', error: err.message })
+  }
+})
+
+
 module.exports = router;
