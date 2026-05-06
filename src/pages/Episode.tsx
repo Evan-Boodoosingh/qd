@@ -56,12 +56,16 @@ const timeAgo = (dateString: string) => {
   return `${Math.floor(diff / 86400)}d ago`
 }
 
+// Cache synopses in memory so navigating back doesn't lose them
+const synopsisCache: Record<string, string> = {}
+
 function Episode() {
   const { id, ep } = useParams<{ id: string; ep: string }>()
   const [show, setShow] = useState<ShowData | null>(null)
   const [episode, setEpisode] = useState<EpisodeData | null>(null)
   const [discussions, setDiscussions] = useState<Discussion[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingSynopsis, setLoadingSynopsis] = useState(true)
   const [showDiscussions, setShowDiscussions] = useState(false)
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
@@ -69,6 +73,16 @@ function Episode() {
 
   useEffect(() => {
     if (!id || !ep) return
+
+    setLoading(true)
+    setLoadingSynopsis(true)
+
+    const cacheKey = `${id}-${ep}`
+
+    // If we already fetched this synopsis, apply it immediately
+    if (synopsisCache[cacheKey]) {
+      setLoadingSynopsis(false)
+    }
 
     fetch(`http://localhost:3001/api/anime/show/${id}`)
       .then((res) => res.json())
@@ -90,25 +104,53 @@ function Episode() {
 
         const epNumber = parseInt(ep)
         const foundEp = data.episodeList?.find((e: EpisodeData) => e.number === epNumber)
-        setEpisode(foundEp || {
+        const baseEpisode = foundEp || {
           number: epNumber,
           title: `Episode ${epNumber}`,
           airDate: null,
           filler: false,
           recap: false,
+        }
+
+        // Apply cached synopsis immediately if available
+        setEpisode({
+          ...baseEpisode,
+          synopsis: synopsisCache[cacheKey] || null,
         })
+
         setLoading(false)
       })
       .catch(() => setLoading(false))
 
-    fetch(`http://localhost:3001/api/anime/show/${id}/episode/${ep}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchEpisodeDetail = async (retries = 2) => {
+      // Already have it cached
+      if (synopsisCache[cacheKey]) {
+        setLoadingSynopsis(false)
+        return
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3001/api/anime/show/${id}/episode/${ep}`)
+        const data = await res.json()
         if (data.synopsis) {
+          synopsisCache[cacheKey] = data.synopsis
           setEpisode((prev) => prev ? { ...prev, synopsis: data.synopsis } : prev)
+          setLoadingSynopsis(false)
+        } else if (retries > 0) {
+          setTimeout(() => fetchEpisodeDetail(retries - 1), 3000)
+        } else {
+          setLoadingSynopsis(false)
         }
-      })
-      .catch(() => {})
+      } catch {
+        if (retries > 0) {
+          setTimeout(() => fetchEpisodeDetail(retries - 1), 3000)
+        } else {
+          setLoadingSynopsis(false)
+        }
+      }
+    }
+
+    fetchEpisodeDetail()
 
     fetch(`http://localhost:3001/api/threads?showId=${id}`)
       .then((res) => res.json())
@@ -157,8 +199,18 @@ function Episode() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f0e0d] via-[#0f0e0d]/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0f0e0d] via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 px-8 pb-6 max-w-3xl">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
+
+        <div className="absolute bottom-0 left-0 right-0 px-8 pb-6 flex flex-col items-center text-center">
+          <div
+            className="text-[12px] text-[#D13924] cursor-pointer hover:underline mb-1"
+            onClick={() => window.location.href = `/show/${show.id}`}
+          >
+            {show.title}
+          </div>
+          <h1 className="text-3xl font-medium text-[#f0ede8] mb-1">
+            Episode {episode.number}{episode.title !== `Episode ${episode.number}` ? ` — ${episode.title}` : ''}
+          </h1>
+          <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
             {show.genres.slice(0, 3).map((g) => (
               <span key={g} className="text-[10px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 px-2 py-0.5 rounded-full">
                 {g}
@@ -171,15 +223,6 @@ function Episode() {
               <span className="text-[10px] text-[#9a9590] bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">Recap</span>
             )}
           </div>
-          <div
-            className="text-[12px] text-[#D13924] cursor-pointer hover:underline mb-1"
-            onClick={() => window.location.href = `/show/${show.id}`}
-          >
-            {show.title}
-          </div>
-          <h1 className="text-3xl font-medium text-[#f0ede8] mb-1">
-            Episode {episode.number}{episode.title !== `Episode ${episode.number}` ? ` — ${episode.title}` : ''}
-          </h1>
           <p className="text-[12px] text-[#9a9590]">
             {show.studio} · {formatAirDate(episode.airDate)}
           </p>
@@ -222,8 +265,10 @@ function Episode() {
               <h2 className="text-[13px] font-medium text-[#f0ede8] mb-3">Synopsis</h2>
               {episode.synopsis ? (
                 <p className="text-[13px] text-[#c8c4be] leading-relaxed">{episode.synopsis}</p>
+              ) : loadingSynopsis ? (
+                <p className="text-[13px] text-[#5a5650] animate-pulse">Loading synopsis...</p>
               ) : (
-                <p className="text-[13px] text-[#5a5650] italic">Synopsis coming soon</p>
+                <p className="text-[13px] text-[#5a5650] italic">No synopsis available for this episode</p>
               )}
             </div>
 

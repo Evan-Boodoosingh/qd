@@ -23,8 +23,8 @@ router.get('/season', async (req, res) => {
     }
 
     const [seasonalRes, ongoingRes] = await Promise.all([
-      fetch('https://api.jikan.moe/v4/seasons/now?limit=25'),
-      fetch('https://api.jikan.moe/v4/anime?status=airing&type=tv&order_by=members&sort=desc&limit=25')
+      jikanFetch('https://api.jikan.moe/v4/seasons/now?limit=25'),
+      jikanFetch('https://api.jikan.moe/v4/anime?status=airing&type=tv&order_by=members&sort=desc&limit=25')
     ])
 
     const [seasonalData, ongoingData] = await Promise.all([
@@ -95,7 +95,6 @@ router.get('/show/:id', async (req, res) => {
 
     const show = showData.data
 
-    // Fetch only page 1 of episodes on initial load
     let episodes = []
     let totalEpisodePages = 1
     try {
@@ -184,7 +183,7 @@ router.get('/show/:id', async (req, res) => {
   }
 })
 
-// GET /api/anime/show/:id/episodes?page=2 — fetch a specific episode page on demand
+// GET /api/anime/show/:id/episodes?page=2
 router.get('/show/:id/episodes', async (req, res) => {
   try {
     const { id } = req.params
@@ -226,8 +225,10 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
     const cacheKey = `${id}-${ep}`
     const now = Date.now()
 
+    // Only serve from cache if we actually have a synopsis
     if (
       episodeDetailCache[cacheKey] &&
+      episodeDetailCache[cacheKey].data.synopsis &&
       now - episodeDetailCache[cacheKey].time < EPISODE_DETAIL_CACHE_DURATION
     ) {
       return res.json(episodeDetailCache[cacheKey].data)
@@ -239,18 +240,15 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
     const data = await response.json()
 
     if (!data.data) {
-      episodeDetailCache[cacheKey] = {
-        data: {
-          number: parseInt(ep),
-          title: `Episode ${ep}`,
-          airDate: null,
-          filler: false,
-          recap: false,
-          synopsis: null,
-        },
-        time: now
-      }
-      return res.json(episodeDetailCache[cacheKey].data)
+      // Don't cache — return empty and let frontend retry
+      return res.json({
+        number: parseInt(ep),
+        title: `Episode ${ep}`,
+        airDate: null,
+        filler: false,
+        recap: false,
+        synopsis: null,
+      })
     }
 
     const episode = data.data
@@ -268,7 +266,10 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
       forumUrl: episode.forum_url || null,
     }
 
-    episodeDetailCache[cacheKey] = { data: result, time: now }
+    // Only cache if we got a synopsis
+    if (result.synopsis) {
+      episodeDetailCache[cacheKey] = { data: result, time: now }
+    }
 
     res.json(result)
   } catch (err) {
