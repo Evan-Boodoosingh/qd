@@ -6,6 +6,10 @@ type Friend = {
   displayName: string
 }
 
+type Reply = {
+  _id: string
+}
+
 type Thread = {
   _id: string
   show: string
@@ -14,7 +18,7 @@ type Thread = {
   season?: number
   episode?: number
   originalPost: string
-  replies: any[]
+  replies: Reply[]
   createdBy: string
   username: string
   createdAt: string
@@ -44,15 +48,11 @@ const timeAgo = (dateString: string) => {
 
 function Discussions() {
   const [threads, setThreads] = useState<ThreadWithFriends[]>([])
-  const [loading, setLoading] = useState(true)
-
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  const [loading, setLoading] = useState(!!token)
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
+    
 
     const fetchData = async () => {
       try {
@@ -80,7 +80,6 @@ function Discussions() {
         const friendMap: Record<string, Friend> = {}
         for (const f of friendsData) friendMap[f._id] = f
 
-        // Filter threads created by friends
         const friendThreads: ThreadWithFriends[] = threadsData
           .filter((t: Thread) => friendIds.has(t.createdBy))
           .map((t: Thread) => ({
@@ -105,30 +104,31 @@ function Discussions() {
 
   if (loading) return null
 
-if (threads.length === 0) {
-  return (
-    <div className="border-t border-white/5 py-10">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-sm font-medium text-[#f0ede8]">Active discussions in your circle</h2>
-            <p className="text-[11px] text-[#9a9590] mt-0.5">Threads your mutuals are already talking in</p>
+  if (threads.length === 0) {
+    return (
+      <div className="border-t border-white/5 py-10">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-sm font-medium text-[#f0ede8]">Active discussions in your circle</h2>
+              <p className="text-[11px] text-[#9a9590] mt-0.5">Threads your mutuals are already talking in</p>
+            </div>
+            <span
+              onClick={() => window.location.href = '/community'}
+              className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
+            >
+              See all threads
+            </span>
           </div>
-          <span
-            onClick={() => window.location.href = '/community'}
-            className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
-          >
-            See all threads
-          </span>
-        </div>
-        <div className="text-center py-12 bg-[#1a1815] border border-white/7 rounded-xl">
-          <p className="text-[#9a9590] text-sm mb-1">No active discussions yet</p>
-          <p className="text-[#5a5650] text-[12px]">When your friends start threads you'll see them here</p>
+          <div className="text-center py-12 bg-[#1a1815] border border-white/7 rounded-xl">
+            <p className="text-[#9a9590] text-sm mb-1">No active discussions yet</p>
+            <p className="text-[#5a5650] text-[12px]">When your friends start threads you'll see them here</p>
+          </div>
         </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
+
   return (
     <div className="border-t border-white/5 py-10">
       <div className="max-w-6xl mx-auto px-6">
@@ -154,7 +154,6 @@ if (threads.length === 0) {
               className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
             >
               <div className="flex items-center gap-3 mb-3">
-                {/* Friend avatars */}
                 <div className="flex">
                   {thread.friendParticipants.map((p, j) => {
                     const color = getColor(p._id)
@@ -190,7 +189,7 @@ if (threads.length === 0) {
                   </div>
                 </div>
 
-                <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
+                <span className={`text-[9px] px-2 py-0.5 rounded-full shrink-0 border ${
                   thread.threadType === 'episode'
                     ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
                     : thread.threadType === 'season'
@@ -200,7 +199,7 @@ if (threads.length === 0) {
                   {thread.threadType === 'episode' ? 'Episode' : thread.threadType === 'season' ? 'Season' : 'Show'}
                 </span>
 
-                <span className="text-[10px] text-[#5a5650] flex-shrink-0">{timeAgo(thread.createdAt)}</span>
+                <span className="text-[10px] text-[#5a5650] shrink-0">{timeAgo(thread.createdAt)}</span>
               </div>
 
               <div className={`text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2 ${

@@ -27,13 +27,17 @@ type ShowData = {
   rating: string | null
 }
 
+type Reply = {
+  _id: string
+}
+
 type Discussion = {
   _id: string
   threadTitle: string
   threadType: 'episode' | 'season' | 'show'
   season?: number
   episode?: number
-  replies: any[]
+  replies: Reply[]
   hasSpoiler: boolean
   username: string
   createdAt: string
@@ -56,7 +60,6 @@ const timeAgo = (dateString: string) => {
   return `${Math.floor(diff / 86400)}d ago`
 }
 
-// Cache synopses in memory so navigating back doesn't lose them
 const synopsisCache: Record<string, string> = {}
 
 function Episode() {
@@ -65,7 +68,10 @@ function Episode() {
   const [episode, setEpisode] = useState<EpisodeData | null>(null)
   const [discussions, setDiscussions] = useState<Discussion[]>([])
   const [loading, setLoading] = useState(true)
-  const [loadingSynopsis, setLoadingSynopsis] = useState(true)
+  const [loadingSynopsis, setLoadingSynopsis] = useState(() => {
+  if (!id || !ep) return false
+  return !synopsisCache[`${id}-${ep}`]
+})
   const [showDiscussions, setShowDiscussions] = useState(false)
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
@@ -74,15 +80,9 @@ function Episode() {
   useEffect(() => {
     if (!id || !ep) return
 
-    setLoading(true)
-    setLoadingSynopsis(true)
-
     const cacheKey = `${id}-${ep}`
 
-    // If we already fetched this synopsis, apply it immediately
-    if (synopsisCache[cacheKey]) {
-      setLoadingSynopsis(false)
-    }
+    
 
     fetch(`http://localhost:3001/api/anime/show/${id}`)
       .then((res) => res.json())
@@ -112,7 +112,6 @@ function Episode() {
           recap: false,
         }
 
-        // Apply cached synopsis immediately if available
         setEpisode({
           ...baseEpisode,
           synopsis: synopsisCache[cacheKey] || null,
@@ -123,7 +122,6 @@ function Episode() {
       .catch(() => setLoading(false))
 
     const fetchEpisodeDetail = async (retries = 2) => {
-      // Already have it cached
       if (synopsisCache[cacheKey]) {
         setLoadingSynopsis(false)
         return
@@ -161,7 +159,9 @@ function Episode() {
           ))
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        // fail silently
+      })
   }, [id, ep])
 
   if (loading) {
@@ -341,7 +341,7 @@ function Episode() {
                               <div className="text-[13px] font-medium text-[#f0ede8] mb-1">{disc.threadTitle}</div>
                               <div className="text-[11px] text-[#9a9590]">by @{disc.username} · {timeAgo(disc.createdAt)}</div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-2 shrink-0">
                               {disc.hasSpoiler && (
                                 <span className="text-[9px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 px-2 py-0.5 rounded-full">
                                   ⚠ Spoiler
@@ -372,15 +372,11 @@ function Episode() {
           </div>
 
           {/* Right sidebar */}
-          <div className="w-[260px] flex-shrink-0 flex flex-col gap-4">
+          <div className="w-[260px] shrink-0 flex flex-col gap-4">
 
             {/* Poster */}
             <div className="rounded-xl overflow-hidden border border-white/7">
-              <img
-                src={proxyImage(show.image)}
-                alt={show.title}
-                className="w-full object-cover"
-              />
+              <img src={proxyImage(show.image)} alt={show.title} className="w-full object-cover" />
             </div>
 
             {/* Episode details */}
@@ -397,7 +393,7 @@ function Episode() {
                   { label: 'Total eps', value: show.episodes ? String(show.episodes) : 'Ongoing' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start justify-between gap-2">
-                    <span className="text-[11px] text-[#9a9590] flex-shrink-0">{item.label}</span>
+                    <span className="text-[11px] text-[#9a9590] shrink-0">{item.label}</span>
                     <span className="text-[11px] text-[#f0ede8] text-right truncate">{item.value}</span>
                   </div>
                 ))}

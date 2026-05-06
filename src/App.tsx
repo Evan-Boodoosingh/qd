@@ -23,14 +23,18 @@ import NewThread from "./pages/NewThread";
 import Hero from "./components/Hero/Hero";
 import { fetchWatchlist } from "./services/watchlist";
 import Search from "./pages/Search";
-import NotFound from "./pages/NotFound"
+import NotFound from "./pages/NotFound";
+
+type WatchlistEntry = {
+  showId: number
+}
 
 function HomePage() {
   const [watchedIds, setWatchedIds] = useState<number[]>([]);
 
   useEffect(() => {
     fetchWatchlist()
-      .then((data) => setWatchedIds(data.map((e: any) => e.showId)))
+      .then((data: WatchlistEntry[]) => setWatchedIds(data.map((e) => e.showId)))
       .catch(() => {});
   }, []);
 
@@ -42,7 +46,7 @@ function HomePage() {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
       <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
-      <Calendar watchedIds={watchedIds} onAdded={handleAddedToList} />
+      <Calendar />
       <Friends />
       <Discussions />
       {/* <Liked /> */}

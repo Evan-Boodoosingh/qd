@@ -35,16 +35,16 @@ function Calendar() {
 
   useEffect(() => {
     fetchCurrentSeason()
-      .then((data) => {
+      .then((data: Show[]) => {
         const normalized = data
-          .filter((s: any) => s.day && s.day !== 'Unknown')
-          .map((s: any) => ({
+          .filter((s) => s.day && s.day !== 'Unknown')
+          .map((s) => ({
             ...s,
             day: normalizeDayName(s.day),
             isOngoing: s.isOngoing || false,
           }))
-          .filter((s: any, index: number, self: any[]) =>
-            index === self.findIndex((t: any) => t.id === s.id)
+          .filter((s, index, self) =>
+            index === self.findIndex((t) => t.id === s.id)
           )
         setShows(normalized)
         setLoading(false)
@@ -71,7 +71,7 @@ function Calendar() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-sm font-medium text-[#f0ede8]">This week's schedule</h2>
-           <p className="text-[11px] text-[#9a9590] mt-0.5">Current season · Updated daily</p>
+            <p className="text-[11px] text-[#9a9590] mt-0.5">Current season · Updated daily</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -84,9 +84,9 @@ function Calendar() {
             >
               {showOngoing ? 'Seasonal only' : 'All shows'}
             </button>
-          <span className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/20 px-3 py-1 rounded-full">
-  Airing now
-</span>
+            <span className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/20 px-3 py-1 rounded-full">
+              Airing now
+            </span>
           </div>
         </div>
 

@@ -4,6 +4,10 @@ import Nav from '../components/Nav/Nav'
 type ThreadType = 'episode' | 'season' | 'show'
 type SortType = 'mostActive' | 'newest' | 'mostLiked'
 
+type Reply = {
+  _id: string
+}
+
 type Thread = {
   _id: string
   show: string
@@ -14,12 +18,21 @@ type Thread = {
   season?: number
   episode?: number
   originalPost: string
-  replies: any[]
+  replies: Reply[]
   likes: string[]
   hasSpoiler: boolean
   spoilerReports: number
   username: string
   createdAt: string
+}
+
+const timeAgo = (dateString: string) => {
+  const diff = Date.now() - new Date(dateString).getTime()
+  const mins = Math.floor(diff / 1000 / 60)
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
 }
 
 function Community() {
@@ -42,15 +55,6 @@ function Community() {
       })
       .catch(() => setLoading(false))
   }, [])
-
-  const timeAgo = (dateString: string) => {
-    const diff = Date.now() - new Date(dateString).getTime()
-    const mins = Math.floor(diff / 1000 / 60)
-    if (mins < 60) return `${mins}m ago`
-    const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours}h ago`
-    return `${Math.floor(hours / 24)}d ago`
-  }
 
   const isSpoiler = (thread: Thread) =>
     thread.hasSpoiler || thread.spoilerReports >= 5 || reportedSpoilers.includes(thread._id)
@@ -102,7 +106,6 @@ function Community() {
 
         {/* Filters */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
-          {/* Sort */}
           <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
             {([
               { label: 'Most Active', value: 'mostActive' },
@@ -122,7 +125,6 @@ function Community() {
             ))}
           </div>
 
-          {/* Thread type */}
           <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
             {([
               { label: 'All', value: 'all' },
@@ -180,7 +182,7 @@ function Community() {
                     </div>
                     <div className="text-[13px] font-medium text-[#f0ede8] truncate">{thread.threadTitle}</div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {spoiler && (
                       <span className="text-[9px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 px-2 py-0.5 rounded-full">
                         ⚠ Spoiler

@@ -30,6 +30,11 @@ type Thread = {
   createdAt: string
 }
 
+type ParsedUser = {
+  id: string
+  username: string
+}
+
 const getInitials = (username: string) => username.slice(0, 2).toUpperCase()
 
 const getColor = (username: string) => {
@@ -63,14 +68,14 @@ function Thread() {
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-  const parsedUser = user ? JSON.parse(user) : null
+  const parsedUser: ParsedUser | null = user ? JSON.parse(user) : null
   const isLoggedIn = !!user
 
   useEffect(() => {
     if (!id) return
     fetch(`http://localhost:3001/api/threads/${id}`)
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: Thread) => {
         setThread(data)
         setThreadLikeCount(data.likes?.length || 0)
         if (parsedUser) {
@@ -87,7 +92,7 @@ function Thread() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [id])
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sortedReplies = thread ? [...thread.replies].sort((a, b) => {
     if (sortBy === 'top') return b.likes.length - a.likes.length
@@ -99,18 +104,14 @@ function Thread() {
   const handleThreadLike = async () => {
     if (!token || !id) return
     const alreadyLiked = threadLiked
-
-    // Optimistic update
     setThreadLiked(!alreadyLiked)
     setThreadLikeCount(prev => alreadyLiked ? prev - 1 : prev + 1)
-
     try {
       await fetch(`http://localhost:3001/api/threads/${id}/like`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       })
     } catch {
-      // Revert on failure
       setThreadLiked(alreadyLiked)
       setThreadLikeCount(prev => alreadyLiked ? prev + 1 : prev - 1)
     }
@@ -145,7 +146,7 @@ function Thread() {
 
     setLikedReplies(prev => {
       const next = new Set(prev)
-      alreadyLiked ? next.delete(replyId) : next.add(replyId)
+      if (alreadyLiked) { next.delete(replyId) } else { next.add(replyId) }
       return next
     })
     setThread(prev => {
@@ -158,7 +159,7 @@ function Thread() {
                 ...r,
                 likes: alreadyLiked
                   ? r.likes.filter(l => l !== parsedUser?.id)
-                  : [...r.likes, parsedUser?.id]
+                  : [...r.likes, parsedUser?.id ?? '']
               }
             : r
         )
@@ -173,7 +174,7 @@ function Thread() {
     } catch {
       setLikedReplies(prev => {
         const next = new Set(prev)
-        alreadyLiked ? next.add(replyId) : next.delete(replyId)
+        if (alreadyLiked) { next.add(replyId) } else { next.delete(replyId) }
         return next
       })
     }
@@ -187,7 +188,9 @@ function Thread() {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       })
-    } catch {}
+   } catch {
+  // fail silently
+}
   }
 
   const handleReport = async (replyId: string) => {
@@ -198,7 +201,9 @@ function Thread() {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
-    } catch {}
+    } catch {
+      // fail silently
+    }
   }
 
   const isRevealed = (replyId: string) => revealedSpoilers.includes(replyId)
@@ -238,7 +243,7 @@ function Thread() {
       <div key={reply._id} className={`${isNested ? 'ml-10 border-l border-white/5 pl-4' : ''}`}>
         <div className="flex gap-3">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-0.5"
             style={{ backgroundColor: `${color}35`, color }}
           >
             {getInitials(reply.username)}
@@ -275,7 +280,7 @@ function Thread() {
 
             <div className="flex items-center gap-4 flex-wrap">
               <button
-                onClick={() => isLoggedIn && handleLike(reply._id)}
+                onClick={() => { if (isLoggedIn) handleLike(reply._id) }}
                 className={`flex items-center gap-1 text-[11px] transition-all ${
                   liked
                     ? 'text-[#D13924] cursor-pointer'
@@ -408,7 +413,7 @@ function Thread() {
           {/* Thread like button */}
           <div className="flex items-center gap-3 pt-3 border-t border-white/5">
             <button
-              onClick={() => isLoggedIn && handleThreadLike()}
+              onClick={() => { if (isLoggedIn) handleThreadLike() }}
               className={`flex items-center gap-1.5 text-[12px] transition-all ${
                 threadLiked
                   ? 'text-[#D13924] cursor-pointer'
@@ -466,7 +471,7 @@ function Thread() {
             <div className="max-w-3xl mx-auto">
               <div className="flex items-start gap-3">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-1"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-1"
                   style={{ backgroundColor: '#D13924', color: '#fff' }}
                 >
                   {parsedUser?.username?.slice(0, 2).toUpperCase()}
