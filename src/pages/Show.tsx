@@ -302,7 +302,7 @@ function Show() {
         </div>
       </div>
 
-      
+
       {/* Body */}
       <div className="max-w-6xl mx-auto px-8 py-8">
         <div className="flex gap-6 items-start">
@@ -477,14 +477,15 @@ function Show() {
                             className="bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-[#f0ede8] cursor-pointer focus:outline-none focus:border-[#D13924] transition-all"
                           >
                             {Array.from({ length: totalEpisodePages }, (_, i) => {
-                              const start = i * 100 + 1
-                              const end = (i + 1) * 100
-                              return (
-                                <option key={i + 1} value={i + 1}>
-                                  Episodes {start}–{end}
-                                </option>
-                              )
-                            })}
+  const start = i * 100 + 1
+  const isLastPage = i === totalEpisodePages - 1
+  const end = isLastPage && show.airing ? 'Current' : (i + 1) * 100
+  return (
+    <option key={i + 1} value={i + 1}>
+      Episodes {start}–{end}
+    </option>
+  )
+})}
                           </select>
                         )}
                       </div>
