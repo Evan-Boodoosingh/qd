@@ -58,6 +58,8 @@ function Thread() {
   const [likedReplies, setLikedReplies] = useState<Set<string>>(new Set())
   const [flaggedReplies, setFlaggedReplies] = useState<Set<string>>(new Set())
   const [reportedReplies, setReportedReplies] = useState<Set<string>>(new Set())
+  const [threadLiked, setThreadLiked] = useState(false)
+  const [threadLikeCount, setThreadLikeCount] = useState(0)
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
@@ -70,14 +72,17 @@ function Thread() {
       .then((res) => res.json())
       .then((data) => {
         setThread(data)
-        // Initialize liked replies based on current user
-        if (parsedUser && data.replies) {
-          const liked = new Set<string>(
-            data.replies
-              .filter((r: Reply) => r.likes.includes(parsedUser.id))
-              .map((r: Reply) => r._id)
-          )
-          setLikedReplies(liked)
+        setThreadLikeCount(data.likes?.length || 0)
+        if (parsedUser) {
+          setThreadLiked(data.likes?.includes(parsedUser.id) || false)
+          if (data.replies) {
+            const liked = new Set<string>(
+              data.replies
+                .filter((r: Reply) => r.likes.includes(parsedUser.id))
+                .map((r: Reply) => r._id)
+            )
+            setLikedReplies(liked)
+          }
         }
         setLoading(false)
       })
@@ -90,6 +95,26 @@ function Thread() {
     if (sortBy === 'old') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     return 0
   }) : []
+
+  const handleThreadLike = async () => {
+    if (!token || !id) return
+    const alreadyLiked = threadLiked
+
+    // Optimistic update
+    setThreadLiked(!alreadyLiked)
+    setThreadLikeCount(prev => alreadyLiked ? prev - 1 : prev + 1)
+
+    try {
+      await fetch(`http://localhost:3001/api/threads/${id}/like`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch {
+      // Revert on failure
+      setThreadLiked(alreadyLiked)
+      setThreadLikeCount(prev => alreadyLiked ? prev + 1 : prev - 1)
+    }
+  }
 
   const handleReply = async () => {
     if (!replyText.trim() || !token || !id) return
@@ -118,7 +143,6 @@ function Thread() {
     if (!token || !id) return
     const alreadyLiked = likedReplies.has(replyId)
 
-    // Optimistic update
     setLikedReplies(prev => {
       const next = new Set(prev)
       alreadyLiked ? next.delete(replyId) : next.add(replyId)
@@ -147,7 +171,6 @@ function Thread() {
         headers: { Authorization: `Bearer ${token}` }
       })
     } catch {
-      // Revert on failure
       setLikedReplies(prev => {
         const next = new Set(prev)
         alreadyLiked ? next.add(replyId) : next.delete(replyId)
@@ -251,7 +274,6 @@ function Thread() {
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
-              {/* Like button */}
               <button
                 onClick={() => isLoggedIn && handleLike(reply._id)}
                 className={`flex items-center gap-1 text-[11px] transition-all ${
@@ -266,7 +288,6 @@ function Thread() {
                 <span>{reply.likes.length}</span>
               </button>
 
-              {/* Flag spoiler */}
               {isLoggedIn && !reply.hasSpoiler && (
                 <button
                   onClick={() => handleFlag(reply._id)}
@@ -280,7 +301,6 @@ function Thread() {
                 </button>
               )}
 
-              {/* Report */}
               {isLoggedIn && (
                 <button
                   onClick={() => handleReport(reply._id)}
@@ -353,6 +373,8 @@ function Thread() {
             <span>{timeAgo(thread.createdAt)}</span>
             <span>·</span>
             <span>{thread.replies.length} {thread.replies.length === 1 ? 'reply' : 'replies'}</span>
+            <span>·</span>
+            <span>{threadLikeCount} {threadLikeCount === 1 ? 'like' : 'likes'}</span>
           </div>
         </div>
 
@@ -378,9 +400,27 @@ function Thread() {
               {showOriginal ? 'Collapse' : 'Expand'}
             </button>
           </div>
+
           {showOriginal && (
-            <p className="text-[13px] text-[#c8c4be] leading-relaxed">{thread.originalPost}</p>
+            <p className="text-[13px] text-[#c8c4be] leading-relaxed mb-4">{thread.originalPost}</p>
           )}
+
+          {/* Thread like button */}
+          <div className="flex items-center gap-3 pt-3 border-t border-white/5">
+            <button
+              onClick={() => isLoggedIn && handleThreadLike()}
+              className={`flex items-center gap-1.5 text-[12px] transition-all ${
+                threadLiked
+                  ? 'text-[#D13924] cursor-pointer'
+                  : isLoggedIn
+                  ? 'text-[#9a9590] hover:text-[#D13924] cursor-pointer'
+                  : 'text-[#9a9590] cursor-default'
+              }`}
+            >
+              <span>{threadLiked ? '♥' : '♡'}</span>
+              <span>{threadLikeCount} {threadLikeCount === 1 ? 'like' : 'likes'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Sort + reply count */}

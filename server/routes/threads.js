@@ -50,6 +50,24 @@ router.post('/', auth, async (req, res) => {
   }
 })
 
+// Like/unlike the thread itself
+router.patch('/:id/like', auth, async (req, res) => {
+  try {
+    const thread = await Thread.findById(req.params.id)
+    if (!thread) return res.status(404).json({ message: 'Thread not found' })
+    const alreadyLiked = thread.likes.includes(req.user.userId)
+    if (alreadyLiked) {
+      thread.likes = thread.likes.filter(id => id.toString() !== req.user.userId)
+    } else {
+      thread.likes.push(req.user.userId)
+    }
+    await thread.save()
+    res.json(thread)
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to like thread', error: err.message })
+  }
+})
+
 router.post('/:id/replies', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
