@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
+import { toast } from '../components/Toast/toastService'
 
 function EditProfile() {
   const [displayName, setDisplayName] = useState('')
@@ -37,69 +38,72 @@ function EditProfile() {
       .catch(() => setLoading(false))
   }, [token])
 
-  const handleSave = async () => {
-    setError('')
-    setSuccess('')
+const handleSave = async () => {
+  setError('')
+  setSuccess('')
 
-    if (newPassword && newPassword !== confirmPassword) {
-      setError('New passwords do not match')
-      return
-    }
-
-    if (newPassword && newPassword.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
-    }
-
-    setSaving(true)
-
-    const updates: Record<string, string> = {
-      displayName,
-      bio,
-      username,
-      email,
-    }
-
-    if (newPassword) {
-      updates.password = newPassword
-    }
-
-    try {
-      const res = await fetch('http://localhost:3001/api/users/me', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updates),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.message || 'Failed to save changes')
-        return
-      }
-
-      if (stored) {
-        const updated = { ...parsedUser, username: data.username }
-        if (localStorage.getItem('user')) localStorage.setItem('user', JSON.stringify(updated))
-        if (sessionStorage.getItem('user')) sessionStorage.setItem('user', JSON.stringify(updated))
-      }
-
-      setSuccess('Profile updated successfully')
-      setNewPassword('')
-      setConfirmPassword('')
-
-      setTimeout(() => {
-        window.location.href = `/profile/${data.username}`
-      }, 1000)
-    } catch {
-      setError('Something went wrong. Please try again.')
-    } finally {
-      setSaving(false)
-    }
+  if (newPassword && newPassword !== confirmPassword) {
+    setError('New passwords do not match')
+    return
   }
+
+  if (newPassword && newPassword.length < 6) {
+    setError('Password must be at least 6 characters')
+    return
+  }
+
+  setSaving(true)
+
+  const updates: Record<string, string> = {
+    displayName,
+    bio,
+    username,
+    email,
+  }
+
+  if (newPassword) {
+    updates.password = newPassword
+  }
+
+  try {
+    const res = await fetch('http://localhost:3001/api/users/me', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(updates),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.message || 'Failed to save changes')
+      toast.error(data.message || 'Failed to save changes')
+      return
+    }
+
+    if (stored) {
+      const updated = { ...parsedUser, username: data.username }
+      if (localStorage.getItem('user')) localStorage.setItem('user', JSON.stringify(updated))
+      if (sessionStorage.getItem('user')) sessionStorage.setItem('user', JSON.stringify(updated))
+    }
+
+    setSuccess('Profile updated successfully')
+    toast.success('Profile updated')
+    setNewPassword('')
+    setConfirmPassword('')
+
+    setTimeout(() => {
+      window.location.href = `/profile/${data.username}`
+    }, 1000)
+  } catch {
+    setError('Something went wrong. Please try again.')
+    toast.error('Something went wrong')
+  } finally {
+    setSaving(false)
+  }
+}
 
   if (loading) {
     return (

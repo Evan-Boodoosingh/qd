@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import Nav from '../components/Nav/Nav'
 import { proxyImage } from '../services/anime'
 import { fetchWatchlist, updateWatchlistEntry, removeFromWatchlist } from '../services/watchlist'
+import { toast } from '../components/Toast/toastService'
 
 type WatchStatus = 'watching' | 'planToWatch' | 'completed' | 'dropped'
 
@@ -64,20 +65,22 @@ function MyList() {
   const filteredShows = watchlist.filter((e) => e.status === activeTab)
 
   const handleStatusChange = async (showId: number, newStatus: WatchStatus, totalEpisodes: number | null) => {
-    const updates: { status: WatchStatus; currentEpisode?: number } = { status: newStatus }
-    if (newStatus === 'completed' && totalEpisodes) {
-      updates.currentEpisode = totalEpisodes
-    }
-    setWatchlist(prev =>
-      prev.map(e => e.showId === showId ? { ...e, ...updates } : e)
-    )
-    setOpenDropdown(null)
-    try {
-      await updateWatchlistEntry(showId, updates)
-    } catch (err) {
-      console.error('Failed to update status:', err)
-    }
+  const updates: { status: WatchStatus; currentEpisode?: number } = { status: newStatus }
+  if (newStatus === 'completed' && totalEpisodes) {
+    updates.currentEpisode = totalEpisodes
   }
+  setWatchlist(prev =>
+    prev.map(e => e.showId === showId ? { ...e, ...updates } : e)
+  )
+  setOpenDropdown(null)
+  try {
+    await updateWatchlistEntry(showId, updates)
+    toast.success(`Marked as ${statusLabels[newStatus]}`)
+  } catch (err) {
+    console.error('Failed to update status:', err)
+    toast.error('Failed to update status')
+  }
+}
 
   const handleEpisodeChange = (showId: number, delta: number, current: number, total: number | null, airing: number | null) => {
     const cap = airing ?? total ?? Infinity
@@ -95,26 +98,30 @@ function MyList() {
     }, 600)
   }
 
-  const handleRating = async (showId: number, rating: number) => {
-    setWatchlist(prev =>
-      prev.map(e => e.showId === showId ? { ...e, rating } : e)
-    )
-    try {
-      await updateWatchlistEntry(showId, { rating })
-    } catch (err) {
-      console.error('Failed to save rating:', err)
-    }
+const handleRating = async (showId: number, rating: number) => {
+  setWatchlist(prev =>
+    prev.map(e => e.showId === showId ? { ...e, rating } : e)
+  )
+  try {
+    await updateWatchlistEntry(showId, { rating })
+    toast.success(`Rated ${rating}/10`)
+  } catch (err) {
+    console.error('Failed to save rating:', err)
+    toast.error('Failed to save rating')
   }
+}
 
-  const handleRemove = async (showId: number) => {
-    try {
-      await removeFromWatchlist(showId)
-      setWatchlist(prev => prev.filter(e => e.showId !== showId))
-      setConfirmDelete(null)
-    } catch (err) {
-      console.error('Failed to remove show:', err)
-    }
+const handleRemove = async (showId: number) => {
+  try {
+    await removeFromWatchlist(showId)
+    setWatchlist(prev => prev.filter(e => e.showId !== showId))
+    setConfirmDelete(null)
+    toast.success('Removed from list')
+  } catch (err) {
+    console.error('Failed to remove show:', err)
+    toast.error('Failed to remove show')
   }
+}
 
   const getProgressPercent = (show: WatchlistEntry) => {
     const ceiling = show.airingEpisode ?? show.totalEpisodes

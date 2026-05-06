@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
-import Nav from "./components/Nav/Nav";
 import Calendar from "./components/Calendar/Calendar";
 import Friends from "./components/Friends/Friends";
 import Discussions from "./components/Discussions/Discussions";
@@ -24,6 +23,7 @@ import Hero from "./components/Hero/Hero";
 import { fetchWatchlist } from "./services/watchlist";
 import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
+import { ToastProvider } from "./components/Toast/Toast";
 
 type WatchlistEntry = {
   showId: number
@@ -44,7 +44,6 @@ function HomePage() {
 
   return (
     <div className="bg-[#0f0e0d] min-h-screen text-white">
-      <Nav />
       <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
       <Calendar />
       <Friends />
@@ -58,66 +57,69 @@ function HomePage() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/schedule" element={<Schedule />} />
-      <Route path="/community" element={<Community />} />
-      <Route path="/show/:id" element={<Show />} />
-      <Route path="/thread/:id" element={<Thread />} />
-      <Route path="/show/:id/episode/:ep" element={<Episode />} />
-      <Route path="/search" element={<Search />} />
-      <Route path="*" element={<NotFound />} />
-      <Route
-        path="/home"
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-list"
-        element={
-          <ProtectedRoute>
-            <MyList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile/edit"
-        element={
-          <ProtectedRoute>
-            <EditProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile/:username"
-        element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/friends"
-        element={
-          <ProtectedRoute>
-            <FriendsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/thread/new"
-        element={
-          <ProtectedRoute>
-            <NewThread />
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+    <>
+      <ToastProvider />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/schedule" element={<Schedule />} />
+        <Route path="/community" element={<Community />} />
+        <Route path="/show/:id" element={<Show />} />
+        <Route path="/thread/:id" element={<Thread />} />
+        <Route path="/show/:id/episode/:ep" element={<Episode />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="*" element={<NotFound />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-list"
+          element={
+            <ProtectedRoute>
+              <MyList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:username"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <FriendsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/thread/new"
+          element={
+            <ProtectedRoute>
+              <NewThread />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 

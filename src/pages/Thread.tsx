@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import Nav from '../components/Nav/Nav'
+import { toast } from '../components/Toast/toastService'
 
 type SortType = 'top' | 'new' | 'old'
 
@@ -102,109 +103,114 @@ function Thread() {
   }) : []
 
   const handleThreadLike = async () => {
-    if (!token || !id) return
-    const alreadyLiked = threadLiked
-    setThreadLiked(!alreadyLiked)
-    setThreadLikeCount(prev => alreadyLiked ? prev - 1 : prev + 1)
-    try {
-      await fetch(`http://localhost:3001/api/threads/${id}/like`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch {
-      setThreadLiked(alreadyLiked)
-      setThreadLikeCount(prev => alreadyLiked ? prev + 1 : prev - 1)
-    }
+  if (!token || !id) return
+  const alreadyLiked = threadLiked
+  setThreadLiked(!alreadyLiked)
+  setThreadLikeCount(prev => alreadyLiked ? prev - 1 : prev + 1)
+  try {
+    await fetch(`http://localhost:3001/api/threads/${id}/like`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  } catch {
+    setThreadLiked(alreadyLiked)
+    setThreadLikeCount(prev => alreadyLiked ? prev + 1 : prev - 1)
+    toast.error('Failed to like thread')
   }
-
-  const handleReply = async () => {
-    if (!replyText.trim() || !token || !id) return
-    setSubmitting(true)
-    try {
-      const response = await fetch(`http://localhost:3001/api/threads/${id}/replies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: replyText, hasSpoiler: isSpoiler }),
-      })
-      const updatedThread = await response.json()
-      setThread(updatedThread)
-      setReplyText('')
-      setIsSpoiler(false)
-    } catch (err) {
-      console.error('Failed to post reply', err)
-    } finally {
-      setSubmitting(false)
-    }
+}
+const handleReply = async () => {
+  if (!replyText.trim() || !token || !id) return
+  setSubmitting(true)
+  try {
+    const response = await fetch(`http://localhost:3001/api/threads/${id}/replies`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content: replyText, hasSpoiler: isSpoiler }),
+    })
+    const updatedThread = await response.json()
+    setThread(updatedThread)
+    setReplyText('')
+    setIsSpoiler(false)
+    toast.success('Reply posted')
+  } catch (err) {
+    console.error('Failed to post reply', err)
+    toast.error('Failed to post reply')
+  } finally {
+    setSubmitting(false)
   }
+}
 
   const handleLike = async (replyId: string) => {
-    if (!token || !id) return
-    const alreadyLiked = likedReplies.has(replyId)
+  if (!token || !id) return
+  const alreadyLiked = likedReplies.has(replyId)
 
+  setLikedReplies(prev => {
+    const next = new Set(prev)
+    if (alreadyLiked) { next.delete(replyId) } else { next.add(replyId) }
+    return next
+  })
+  setThread(prev => {
+    if (!prev) return prev
+    return {
+      ...prev,
+      replies: prev.replies.map(r =>
+        r._id === replyId
+          ? {
+              ...r,
+              likes: alreadyLiked
+                ? r.likes.filter(l => l !== parsedUser?.id)
+                : [...r.likes, parsedUser?.id ?? '']
+            }
+          : r
+      )
+    }
+  })
+
+  try {
+    await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/like`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  } catch {
     setLikedReplies(prev => {
       const next = new Set(prev)
-      if (alreadyLiked) { next.delete(replyId) } else { next.add(replyId) }
+      if (alreadyLiked) { next.add(replyId) } else { next.delete(replyId) }
       return next
     })
-    setThread(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        replies: prev.replies.map(r =>
-          r._id === replyId
-            ? {
-                ...r,
-                likes: alreadyLiked
-                  ? r.likes.filter(l => l !== parsedUser?.id)
-                  : [...r.likes, parsedUser?.id ?? '']
-              }
-            : r
-        )
-      }
-    })
-
-    try {
-      await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/like`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch {
-      setLikedReplies(prev => {
-        const next = new Set(prev)
-        if (alreadyLiked) { next.add(replyId) } else { next.delete(replyId) }
-        return next
-      })
-    }
+    toast.error('Failed to like reply')
   }
-
-  const handleFlag = async (replyId: string) => {
-    if (!token || !id || flaggedReplies.has(replyId)) return
-    setFlaggedReplies(prev => new Set(prev).add(replyId))
-    try {
-      await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/flag`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-   } catch {
-  // fail silently
 }
-  }
 
-  const handleReport = async (replyId: string) => {
-    if (!token || !id || reportedReplies.has(replyId)) return
-    setReportedReplies(prev => new Set(prev).add(replyId))
-    try {
-      await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/report`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch {
-      // fail silently
-    }
+ const handleFlag = async (replyId: string) => {
+  if (!token || !id || flaggedReplies.has(replyId)) return
+  setFlaggedReplies(prev => new Set(prev).add(replyId))
+  try {
+    await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/flag`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    toast.success('Flagged as spoiler')
+  } catch {
+    // fail silently
   }
+}
+
+ const handleReport = async (replyId: string) => {
+  if (!token || !id || reportedReplies.has(replyId)) return
+  setReportedReplies(prev => new Set(prev).add(replyId))
+  try {
+    await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/report`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    toast.success('Reply reported')
+  } catch {
+    // fail silently
+  }
+}
 
   const isRevealed = (replyId: string) => revealedSpoilers.includes(replyId)
 

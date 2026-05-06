@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
+import { toast } from '../components/Toast/toastService'
 
 type WatchlistEntry = {
   showId: number
@@ -114,45 +115,57 @@ function Friends() {
   }, [token])
 
   const handleAccept = async (requestId: string) => {
-    setRequests(prev => prev.filter(r => r._id !== requestId))
-    try {
-      await fetch(`http://localhost:3001/api/friends/request/${requestId}/accept`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch {}
+  setRequests(prev => prev.filter(r => r._id !== requestId))
+  try {
+    await fetch(`http://localhost:3001/api/friends/request/${requestId}/accept`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    toast.success('Friend request accepted')
+  } catch {
+    toast.error('Failed to accept request')
   }
+}
 
-  const handleDecline = async (requestId: string) => {
-    setRequests(prev => prev.filter(r => r._id !== requestId))
-    try {
-      await fetch(`http://localhost:3001/api/friends/request/${requestId}/decline`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch {}
+const handleDecline = async (requestId: string) => {
+  setRequests(prev => prev.filter(r => r._id !== requestId))
+  try {
+    await fetch(`http://localhost:3001/api/friends/request/${requestId}/decline`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    toast.success('Request declined')
+  } catch {
+    toast.error('Failed to decline request')
   }
+}
 
   const handleRemoveFriend = async (friendId: string, name: string) => {
-    if (!confirm(`Remove ${name} from friends?`)) return
-    setFriends(prev => prev.filter(f => f._id !== friendId))
-    try {
-      await fetch(`http://localhost:3001/api/friends/${friendId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch {}
+  if (!confirm(`Remove ${name} from friends?`)) return
+  setFriends(prev => prev.filter(f => f._id !== friendId))
+  try {
+    await fetch(`http://localhost:3001/api/friends/${friendId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    toast.success(`Removed ${name}`)
+  } catch {
+    toast.error('Failed to remove friend')
   }
+}
 
-  const handleAddSuggested = async (username: string, id: string) => {
-    setSentRequests(prev => [...prev, id])
-    try {
-      await fetch(`http://localhost:3001/api/friends/request/${username}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch {}
+const handleAddSuggested = async (username: string, id: string) => {
+  setSentRequests(prev => [...prev, id])
+  try {
+    await fetch(`http://localhost:3001/api/friends/request/${username}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    toast.success('Friend request sent')
+  } catch {
+    toast.error('Failed to send request')
   }
+}
 
   const myShowIds = new Set(myWatchlist.map(e => e.showId))
 

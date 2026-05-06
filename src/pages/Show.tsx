@@ -7,6 +7,7 @@ import {
   updateWatchlistEntry,
   fetchWatchlist,
 } from "../services/watchlist";
+import { toast } from "../components/Toast/toastService";
 
 type WatchStatus = "watching" | "completed" | "planToWatch" | "dropped" | null;
 
@@ -215,9 +216,12 @@ function Show() {
       });
       setOnList(true);
       setWatchStatus("planToWatch");
+      toast.success("Added to list");
     } catch (err) {
       if (err instanceof Error && err.message === "Show already on your list") {
         setOnList(true);
+      } else {
+        toast.error("Failed to add to list");
       }
     }
   };
@@ -229,8 +233,15 @@ function Show() {
     try {
       if (!onList) await handleAddToList();
       await updateWatchlistEntry(show.id, { status });
+      const labels: Record<string, string> = {
+        watching: "Watching",
+        planToWatch: "Plan to Watch",
+        completed: "Completed",
+        dropped: "Dropped",
+      };
+      toast.success(`Marked as ${labels[status]}`);
     } catch {
-      // fail silently
+      toast.error("Failed to update status");
     } finally {
       setSavingStatus(false);
     }

@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 
+type Reply = {
+  _id: string
+}
+
 type Thread = {
   _id: string
   show: string
@@ -8,7 +12,7 @@ type Thread = {
   season?: number
   episode?: number
   originalPost: string
-  replies: any[]
+  replies: Reply[]
   likes: string[]
   hasSpoiler: boolean
   username: string
@@ -36,7 +40,7 @@ function PopularDiscussions() {
       .then(data => {
         if (Array.isArray(data)) {
           const sorted = data
-            .sort((a, b) => b.replies.length - a.replies.length)
+            .sort((a: Thread, b: Thread) => b.replies.length - a.replies.length)
             .slice(0, 3)
           setThreads(sorted)
         }
@@ -83,7 +87,7 @@ function PopularDiscussions() {
                   </div>
                 </div>
 
-                <span className={`text-[9px] px-2 py-0.5 rounded-full flex-shrink-0 border ${
+                <span className={`text-[9px] px-2 py-0.5 rounded-full shrink-0 border ${
                   thread.threadType === 'episode'
                     ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
                     : thread.threadType === 'season'
@@ -93,7 +97,7 @@ function PopularDiscussions() {
                   {thread.threadType === 'episode' ? 'Episode' : thread.threadType === 'season' ? 'Season' : 'Show'}
                 </span>
 
-                <span className="text-[10px] text-[#5a5650] flex-shrink-0">{timeAgo(thread.createdAt)}</span>
+                <span className="text-[10px] text-[#5a5650] shrink-0">{timeAgo(thread.createdAt)}</span>
               </div>
 
               <div className={`text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2 ${
