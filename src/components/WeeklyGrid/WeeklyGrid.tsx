@@ -1,13 +1,12 @@
 import { proxyImage } from '../../services/anime'
+import { getLocalDay, getLocalTime, getLocalMinutes } from '../../utils/scheduleTime'
+import type { ScheduleShow } from '../../utils/scheduleTime'
 
-type Show = {
+type Show = ScheduleShow & {
   id: number
   title: string
   image: string | null
   score: number
-  day: string
-  time: string | null
-  timezone: string
   isOngoing?: boolean
 }
 
@@ -17,75 +16,21 @@ type Props = {
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-const normalizeDayToShort = (day: string): string => {
-  const map: Record<string, string> = {
-    Monday: 'Mon',
-    Tuesday: 'Tue',
-    Wednesday: 'Wed',
-    Thursday: 'Thu',
-    Friday: 'Fri',
-    Saturday: 'Sat',
-    Sunday: 'Sun',
-  }
-  return map[day] || day
-}
-
-const convertToLocalTime = (time: string, timezone: string): string => {
-  try {
-    const [hours, minutes] = time.split(':').map(Number)
-    const now = new Date()
-    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
-
-    const sourceTzFormatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false
-    })
-
-    const tempDate = new Date(dateStr + 'Z')
-    const parts = sourceTzFormatter.formatToParts(tempDate)
-    const tzHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0')
-    const tzMin = parseInt(parts.find(p => p.type === 'minute')?.value || '0')
-    const diffMs = ((hours - tzHour) * 60 + (minutes - tzMin)) * 60 * 1000
-    const correctedDate = new Date(tempDate.getTime() + diffMs)
-
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).format(correctedDate)
-  } catch {
-    return time
-  }
+const fullDayToShort: Record<string, string> = {
+  Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed',
+  Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
 }
 
 function WeeklyGrid({ shows }: Props) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).slice(0, 3)
 
- const toUtcMinutes = (time: string, timezone: string): number => {
-  try {
-    const [hours, minutes] = time.split(':').map(Number)
-    const now = new Date()
-    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
-    const utcDate = new Date(dateStr + 'Z')
-    const localString = utcDate.toLocaleString('en-US', { timeZone: timezone })
-    const tzDate = new Date(localString)
-    const offsetMs = utcDate.getTime() - tzDate.getTime()
-    const corrected = new Date(utcDate.getTime() + offsetMs)
-    return corrected.getUTCHours() * 60 + corrected.getUTCMinutes()
-  } catch {
-    const [h, m] = time.split(':').map(Number)
-    return h * 60 + m
-  }
-}
-
-const getShowsForDay = (day: string) =>
-  shows
-    .filter((s) => normalizeDayToShort(s.day) === day)
-    .sort((a, b) => {
-      if (!a.time || !b.time) return 0
-      return toUtcMinutes(a.time, a.timezone) - toUtcMinutes(b.time, b.timezone)
-    })
+  const getShowsForDay = (shortDay: string) =>
+    shows
+      .filter((s) => {
+        const localDay = getLocalDay(s)
+        return fullDayToShort[localDay] === shortDay
+      })
+      .sort((a, b) => getLocalMinutes(a) - getLocalMinutes(b))
 
   return (
     <div className="grid grid-cols-7 gap-2 items-start">
@@ -126,9 +71,9 @@ const getShowsForDay = (day: string) =>
                   </div>
                   <div className="p-2">
                     <div className="text-[11px] text-[#f0ede8] leading-tight truncate mb-1 font-medium">{show.title}</div>
-                    {show.time && (
+                    {(show.time || show.isoDate) && (
                       <div className="text-[10px] text-[#D13924] font-medium">
-                        {convertToLocalTime(show.time, show.timezone)}
+                        {getLocalTime(show)}
                       </div>
                     )}
                     <div className="text-[10px] text-[#9a9590] mt-0.5">♥ {show.score}</div>

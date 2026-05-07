@@ -82,6 +82,8 @@ const mapJikanShow = (show, isOngoing = false) => ({
   isOngoing,
 })
 
+// Returns { day, time, timezone, isoDate } from AnimeSchedule entry.
+// isoDate is passed to the frontend so it can derive the correct local day/time.
 const extractScheduleTime = (entry) => {
   if (!entry) return null
   const dateStr = entry.subEpisodeDate || entry.episodeDate
@@ -92,6 +94,7 @@ const extractScheduleTime = (entry) => {
     day: days[date.getUTCDay()],
     time: `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`,
     timezone: 'UTC',
+    isoDate: dateStr,
   }
 }
 
@@ -101,7 +104,7 @@ const normalize = (t) => t
   .toLowerCase()
   .trim()
 
-// ─── Season data fetcher (used by route + cache warmer) ──────────────────────
+// ─── Season data fetcher ──────────────────────────────────────────────────────
 
 const fetchSeasonData = async () => {
   const anilistQuery = `
@@ -149,11 +152,13 @@ const fetchSeasonData = async () => {
   const jikanShows = jikanData?.data || []
   const scheduleShows = Array.isArray(scheduleData) ? scheduleData : []
 
+  // Jikan lookup by MAL ID
   const jikanMap = {}
   for (const show of jikanShows) {
     jikanMap[show.mal_id] = show
   }
 
+  // AnimeSchedule lookup — exact and normalized, skip donghua
   const scheduleByTitle = {}
   const scheduleByNormalizedTitle = {}
   for (const show of scheduleShows) {
@@ -165,6 +170,8 @@ const fetchSeasonData = async () => {
     }
   }
 
+  // jikanShow — raw Jikan show object (may be null for AniList-only shows)
+  // anilistShow — raw AniList show object (may be null for Jikan-only shows)
   const findScheduleEntry = (jikanShow, anilistShow) => {
     const candidates = [
       jikanShow?.title_english,
@@ -188,26 +195,31 @@ const fetchSeasonData = async () => {
   const seenIds = new Set()
   const merged = []
 
+  // STEP 1 — AniList shows (primary coverage including carryovers)
   for (const show of anilistShows) {
     if (!show.idMal || seenIds.has(show.idMal)) continue
     seenIds.add(show.idMal)
 
     const jikan = jikanMap[show.idMal]
+
+    // Pass jikan AND anilist so findScheduleEntry has all title variants to try
     const scheduleEntry = findScheduleEntry(jikan, show)
     const scheduledTime = extractScheduleTime(scheduleEntry)
 
-    let day, time, timezone
+    let day, time, timezone, isoDate
     if (scheduledTime) {
-      ;({ day, time, timezone } = scheduledTime)
+      ;({ day, time, timezone, isoDate } = scheduledTime)
     } else if (jikan?.broadcast?.time) {
       day = normalizeDayFromJikan(jikan.broadcast.day)
       time = jikan.broadcast.time
       timezone = jikan.broadcast.timezone || 'Asia/Tokyo'
+      isoDate = null
     } else {
       const airTimestamp = show.nextAiringEpisode?.airingAt || show.airingSchedule?.nodes?.[0]?.airingAt || null
       day = getDayFromTimestamp(airTimestamp)
       time = getTimeFromTimestamp(airTimestamp)
       timezone = 'Asia/Tokyo'
+      isoDate = null
     }
 
     const jikanSeason = jikan?.season
@@ -224,6 +236,7 @@ const fetchSeasonData = async () => {
       day,
       time,
       timezone,
+      isoDate: isoDate || null,
       episodes: show.episodes || jikan?.episodes || null,
       synopsis: jikan?.synopsis || '',
       trailer: jikan?.trailer?.embed_url || null,
@@ -236,6 +249,7 @@ const fetchSeasonData = async () => {
     })
   }
 
+  // STEP 2 — Jikan seasonal shows not already in AniList
   for (const show of jikanShows) {
     if (seenIds.has(show.mal_id)) continue
     seenIds.add(show.mal_id)
@@ -249,9 +263,10 @@ const fetchSeasonData = async () => {
         day: scheduledTime.day,
         time: scheduledTime.time,
         timezone: scheduledTime.timezone,
+        isoDate: scheduledTime.isoDate,
       })
     } else {
-      merged.push(mapJikanShow(show, false))
+      merged.push({ ...mapJikanShow(show, false), isoDate: null })
     }
   }
 
@@ -270,10 +285,8 @@ router.get('/season', async (req, res) => {
     if (isCacheValid(cache.season)) {
       return res.json(cache.season.data)
     }
-
     const result = await fetchSeasonData()
     cache.season = { data: result, time: Date.now() }
-
     res.json(result)
   } catch (err) {
     console.error('SEASON ERROR:', err)
@@ -290,14 +303,11 @@ router.get('/seasonal', async (req, res) => {
     if (isCacheValid(cache.seasonal)) {
       return res.json(cache.seasonal.data)
     }
-
     const response = await jikanFetch('https://api.jikan.moe/v4/seasons/now?limit=25')
     const data = await response.json()
     const shows = (data.data || []).map((show) => mapJikanShow(show, false))
-
     const result = { shows }
     cache.seasonal = { data: result, time: Date.now() }
-
     res.json(result)
   } catch (err) {
     console.error('SEASONAL ERROR:', err)
@@ -312,7 +322,6 @@ router.get('/seasonal', async (req, res) => {
 router.get('/show/:id', async (req, res) => {
   try {
     const { id } = req.params
-
     const showRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/full`)
     const showData = await showRes.json()
 
@@ -327,7 +336,6 @@ router.get('/show/:id', async (req, res) => {
     try {
       const cacheKey = `${id}-page-1`
       const now = Date.now()
-
       if (episodeCache[cacheKey] && now - episodeCache[cacheKey].time < CACHE_DURATION) {
         episodes = episodeCache[cacheKey].data
         totalEpisodePages = episodeCache[cacheKey].totalPages
@@ -461,7 +469,6 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1000))
-
     const response = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes/${ep}`)
     const data = await response.json()
 
@@ -503,18 +510,15 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
 
 /**
  * GET /api/anime/search?q=query
- * Search anime by title.
  */
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query
     if (!q) return res.status(400).json({ message: 'Query required' })
-
     const response = await jikanFetch(
       `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10&type=tv`
     )
     const data = await response.json()
-
     const results = (data.data || []).map((show) => ({
       id: show.mal_id,
       title: show.title_english || show.title,
@@ -525,7 +529,6 @@ router.get('/search', async (req, res) => {
       synopsis: show.synopsis || '',
       year: show.year || null,
     }))
-
     res.json({ results })
   } catch (err) {
     console.error('SEARCH ERROR:', err)
@@ -535,13 +538,11 @@ router.get('/search', async (req, res) => {
 
 /**
  * GET /api/anime/top
- * All time top rated anime.
  */
 router.get('/top', async (req, res) => {
   try {
     const response = await jikanFetch('https://api.jikan.moe/v4/top/anime?type=tv&limit=25')
     const data = await response.json()
-
     const results = (data.data || []).map((show) => ({
       id: show.mal_id,
       title: show.title_english || show.title,
@@ -554,7 +555,6 @@ router.get('/top', async (req, res) => {
       studio: show.studios?.[0]?.name || 'Unknown',
       members: show.members || 0,
     }))
-
     res.json({ results })
   } catch (err) {
     console.error('TOP ERROR:', err)
@@ -564,7 +564,6 @@ router.get('/top', async (req, res) => {
 
 /**
  * GET /api/anime/popular
- * Most popular anime by member count.
  */
 router.get('/popular', async (req, res) => {
   try {
@@ -572,7 +571,6 @@ router.get('/popular', async (req, res) => {
       'https://api.jikan.moe/v4/top/anime?type=tv&filter=bypopularity&limit=25'
     )
     const data = await response.json()
-
     const results = (data.data || []).map((show) => ({
       id: show.mal_id,
       title: show.title_english || show.title,
@@ -585,7 +583,6 @@ router.get('/popular', async (req, res) => {
       studio: show.studios?.[0]?.name || 'Unknown',
       members: show.members || 0,
     }))
-
     res.json({ results })
   } catch (err) {
     console.error('POPULAR ERROR:', err)
@@ -595,22 +592,17 @@ router.get('/popular', async (req, res) => {
 
 /**
  * GET /api/anime/image?url=...
- * Image proxy to bypass CORS on Jikan/AniList CDN images.
  */
 router.get('/image', async (req, res) => {
   try {
     const { url } = req.query
     if (!url) return res.status(400).json({ message: 'URL required' })
-
     const response = await fetch(decodeURIComponent(url), {
       headers: { 'User-Agent': 'Queued/1.0' },
     })
-
     if (!response.ok) throw new Error('Failed to fetch image')
-
     const contentType = response.headers.get('content-type') || 'image/jpeg'
     const buffer = await response.arrayBuffer()
-
     res.setHeader('Content-Type', contentType)
     res.setHeader('Cache-Control', 'public, max-age=86400')
     res.send(Buffer.from(buffer))
@@ -621,7 +613,6 @@ router.get('/image', async (req, res) => {
 })
 
 // ─── Cache warmer ─────────────────────────────────────────────────────────────
-// Runs on startup so the first user request is always instant
 
 const warmCache = async () => {
   try {
@@ -629,13 +620,10 @@ const warmCache = async () => {
       fetchSeasonData(),
       jikanFetch('https://api.jikan.moe/v4/seasons/now?limit=25'),
     ])
-
     cache.season = { data: seasonResult, time: Date.now() }
-
     const seasonalData = await seasonalRes.json()
     const shows = (seasonalData.data || []).map((show) => mapJikanShow(show, false))
     cache.seasonal = { data: { shows }, time: Date.now() }
-
     console.log('✓ Cache warmed —', seasonResult.shows.length, 'shows loaded')
   } catch (err) {
     console.error('Cache warm failed:', err.message)

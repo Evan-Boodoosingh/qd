@@ -3,6 +3,7 @@ import Nav from '../components/Nav/Nav'
 import { fetchCurrentSeason, proxyImage } from '../services/anime'
 import { addToWatchlist, fetchWatchlist } from '../services/watchlist'
 import WeeklyGrid from '../components/WeeklyGrid/WeeklyGrid'
+import { getLocalDay, getLocalTime, getLocalMinutes } from '../utils/scheduleTime'
 
 type Show = {
   id: number
@@ -13,6 +14,7 @@ type Show = {
   day: string
   time: string | null
   timezone: string
+  isoDate?: string | null
   episodes: number | null
   studio: string
   subbed: boolean
@@ -25,55 +27,16 @@ type ScheduleTab = 'mySchedule' | 'fullSchedule'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
-
-
-const convertToLocalTime = (time: string, timezone: string): string => {
-  try {
-    const [hours, minutes] = time.split(':').map(Number)
-    const now = new Date()
-    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
-    
-    // Create a formatter that interprets the time AS IF it's in the source timezone
-    const sourceTzFormatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false
-    })
-    
-    // Get UTC equivalent by finding what UTC time corresponds to this local time in the source timezone
-    const tempDate = new Date(dateStr + 'Z')
-    const parts = sourceTzFormatter.formatToParts(tempDate)
-    const tzHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0')
-    const tzMin = parseInt(parts.find(p => p.type === 'minute')?.value || '0')
-    const diffMs = ((hours - tzHour) * 60 + (minutes - tzMin)) * 60 * 1000
-    const correctedDate = new Date(tempDate.getTime() + diffMs)
-
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).format(correctedDate)
-  } catch {
-    return time
-  }
-}
-
 const normalizeDayName = (day: string): string => {
   const map: Record<string, string> = {
-    Mondays: 'Monday',
-    Tuesdays: 'Tuesday',
-    Wednesdays: 'Wednesday',
-    Thursdays: 'Thursday',
-    Fridays: 'Friday',
-    Saturdays: 'Saturday',
-    Sundays: 'Sunday',
+    Mondays: 'Monday', Tuesdays: 'Tuesday', Wednesdays: 'Wednesday',
+    Thursdays: 'Thursday', Fridays: 'Friday', Saturdays: 'Saturday', Sundays: 'Sunday',
   }
   return map[day] || day
 }
 
-const getTodayName = (): string => {
-  return new Date().toLocaleDateString('en-US', { weekday: 'long' })
-}
+const getTodayName = (): string =>
+  new Date().toLocaleDateString('en-US', { weekday: 'long' })
 
 function Schedule() {
   const [shows, setShows] = useState<Show[]>([])
@@ -90,10 +53,13 @@ function Schedule() {
     fetchCurrentSeason()
       .then((data: Show[]) => {
         const normalized = data
-          .filter((s) => s.day && s.day !== 'Unknown')
+          .filter((s) => {
+            const localDay = getLocalDay(s)
+            return localDay && localDay !== 'Unknown'
+          })
           .map((s) => ({
             ...s,
-            day: normalizeDayName(s.day),
+            day: normalizeDayName(getLocalDay(s)),
             onMyList: false,
             subbed: true,
             dubbed: false,
@@ -137,45 +103,18 @@ function Schedule() {
     ? shows.filter((s) => watchedIds.includes(s.id))
     : shows
 
+  const filteredShows = baseShows
+    .filter((show) => showOngoing ? true : !show.isOngoing)
+    .sort((a, b) => getLocalMinutes(a) - getLocalMinutes(b))
 
-
-  const toUtcMinutes = (time: string, timezone: string): number => {
-  try {
-    const [hours, minutes] = time.split(':').map(Number)
-    const now = new Date()
-    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
-    const utcDate = new Date(dateStr + 'Z')
-    const localString = utcDate.toLocaleString('en-US', { timeZone: timezone })
-    const tzDate = new Date(localString)
-    const offsetMs = utcDate.getTime() - tzDate.getTime()
-    const corrected = new Date(utcDate.getTime() + offsetMs)
-    return corrected.getUTCHours() * 60 + corrected.getUTCMinutes()
-  } catch {
-    const [h, m] = time.split(':').map(Number)
-    return h * 60 + m
-  }
-}
-const filteredShows = baseShows
-  .filter((show) => showOngoing ? true : !show.isOngoing)
-  .sort((a, b) => {
-    if (!a.time || !b.time) return 0
-    return toUtcMinutes(a.time, a.timezone) - toUtcMinutes(b.time, b.timezone)
-  })
-
-const showsForDay = filteredShows
-  .filter((show) => show.day === selectedDay)
-  .sort((a, b) => {
-    if (!a.time || !b.time) return 0
-    return toUtcMinutes(a.time, a.timezone) - toUtcMinutes(b.time, b.timezone)
-  })
+  const showsForDay = filteredShows
+    .filter((show) => show.day === selectedDay)
 
   const today = getTodayName()
 
   const bottomGridTitle = activeTab === 'mySchedule'
     ? 'On my list'
-    : showOngoing
-      ? 'All airing shows'
-      : 'Seasonal anime'
+    : showOngoing ? 'All airing shows' : 'Seasonal anime'
 
   if (loading) {
     return (
@@ -293,7 +232,7 @@ const showsForDay = filteredShows
                 >
                   <div className="text-center shrink-0 w-20">
                     <div className="text-[12px] font-medium text-[#f0ede8]">
-                      {show.time ? convertToLocalTime(show.time, show.timezone) : 'TBA'}
+                      {getLocalTime(show) ?? 'TBA'}
                     </div>
                     <div className="text-[10px] text-[#5a5650]">Local time</div>
                   </div>
