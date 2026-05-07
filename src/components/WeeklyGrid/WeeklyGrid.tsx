@@ -62,8 +62,30 @@ const convertToLocalTime = (time: string, timezone: string): string => {
 function WeeklyGrid({ shows }: Props) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).slice(0, 3)
 
-  const getShowsForDay = (day: string) =>
-    shows.filter((s) => normalizeDayToShort(s.day) === day)
+ const toUtcMinutes = (time: string, timezone: string): number => {
+  try {
+    const [hours, minutes] = time.split(':').map(Number)
+    const now = new Date()
+    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+    const utcDate = new Date(dateStr + 'Z')
+    const localString = utcDate.toLocaleString('en-US', { timeZone: timezone })
+    const tzDate = new Date(localString)
+    const offsetMs = utcDate.getTime() - tzDate.getTime()
+    const corrected = new Date(utcDate.getTime() + offsetMs)
+    return corrected.getUTCHours() * 60 + corrected.getUTCMinutes()
+  } catch {
+    const [h, m] = time.split(':').map(Number)
+    return h * 60 + m
+  }
+}
+
+const getShowsForDay = (day: string) =>
+  shows
+    .filter((s) => normalizeDayToShort(s.day) === day)
+    .sort((a, b) => {
+      if (!a.time || !b.time) return 0
+      return toUtcMinutes(a.time, a.timezone) - toUtcMinutes(b.time, b.timezone)
+    })
 
   return (
     <div className="grid grid-cols-7 gap-2 items-start">

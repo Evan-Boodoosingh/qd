@@ -137,15 +137,37 @@ function Schedule() {
     ? shows.filter((s) => watchedIds.includes(s.id))
     : shows
 
-  const filteredShows = baseShows
-    .filter((show) => showOngoing ? true : !show.isOngoing)
 
-  const showsForDay = filteredShows
-    .filter((show) => show.day === selectedDay)
-    .sort((a, b) => {
-      if (!a.time || !b.time) return 0
-      return a.time.localeCompare(b.time)
-    })
+
+  const toUtcMinutes = (time: string, timezone: string): number => {
+  try {
+    const [hours, minutes] = time.split(':').map(Number)
+    const now = new Date()
+    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+    const utcDate = new Date(dateStr + 'Z')
+    const localString = utcDate.toLocaleString('en-US', { timeZone: timezone })
+    const tzDate = new Date(localString)
+    const offsetMs = utcDate.getTime() - tzDate.getTime()
+    const corrected = new Date(utcDate.getTime() + offsetMs)
+    return corrected.getUTCHours() * 60 + corrected.getUTCMinutes()
+  } catch {
+    const [h, m] = time.split(':').map(Number)
+    return h * 60 + m
+  }
+}
+const filteredShows = baseShows
+  .filter((show) => showOngoing ? true : !show.isOngoing)
+  .sort((a, b) => {
+    if (!a.time || !b.time) return 0
+    return toUtcMinutes(a.time, a.timezone) - toUtcMinutes(b.time, b.timezone)
+  })
+
+const showsForDay = filteredShows
+  .filter((show) => show.day === selectedDay)
+  .sort((a, b) => {
+    if (!a.time || !b.time) return 0
+    return toUtcMinutes(a.time, a.timezone) - toUtcMinutes(b.time, b.timezone)
+  })
 
   const today = getTodayName()
 
