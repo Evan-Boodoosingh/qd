@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchCurrentSeason, proxyImage } from '../../services/anime'
+import { fetchSeasonalOnly, proxyImage } from '../../services/anime'
 import { addToWatchlist } from '../../services/watchlist'
 
 type Show = {
@@ -28,7 +28,7 @@ function Trending({ watchedIds = [], onAdded }: Props) {
   const isLoggedIn = !!user
 
   useEffect(() => {
-    fetchCurrentSeason()
+    fetchSeasonalOnly()
       .then((data) => {
         const top = data
           .filter((s: Show) => s.image && s.score > 0)
@@ -59,9 +59,9 @@ function Trending({ watchedIds = [], onAdded }: Props) {
         genres: show.genres,
       })
       onAdded(show.id)
-    } catch (err: any) {
-      if (err.message === 'Show already on your list') onAdded(show.id)
-    }
+    } catch (err) {
+  if (err instanceof Error && err.message === 'Show already on your list') onAdded(show.id)
+}
   }
 
   if (loading) {

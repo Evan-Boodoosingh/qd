@@ -33,14 +33,27 @@ const normalizeDayToShort = (day: string): string => {
 const convertToLocalTime = (time: string, timezone: string): string => {
   try {
     const [hours, minutes] = time.split(':').map(Number)
-    const date = new Date()
-    date.setHours(hours, minutes, 0, 0)
+    const now = new Date()
+    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+
+    const sourceTzFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    })
+
+    const tempDate = new Date(dateStr + 'Z')
+    const parts = sourceTzFormatter.formatToParts(tempDate)
+    const tzHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0')
+    const tzMin = parseInt(parts.find(p => p.type === 'minute')?.value || '0')
+    const diffMs = ((hours - tzHour) * 60 + (minutes - tzMin)) * 60 * 1000
+    const correctedDate = new Date(tempDate.getTime() + diffMs)
+
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: timezone,
       hour12: true,
-    }).format(date)
+    }).format(correctedDate)
   } catch {
     return time
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchCurrentSeason, proxyImage } from '../../services/anime'
+import { fetchSeasonalOnly, proxyImage } from '../../services/anime'
 import { addToWatchlist } from '../../services/watchlist'
 
 type Show = {
@@ -20,20 +20,25 @@ type Props = {
   onAdded: (showId: number) => void
 }
 
+let seasonalCache: Show[] | null = null
+
 function Hero({ watchedIds = [], onAdded }: Props) {
-  const [shows, setShows] = useState<Show[]>([])
+  const [shows, setShows] = useState<Show[]>(seasonalCache || [])
   const [current, setCurrent] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!seasonalCache)
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const isLoggedIn = !!user
 
   useEffect(() => {
-    fetchCurrentSeason()
-      .then((data) => {
+    if (seasonalCache) return
+    fetchSeasonalOnly()
+      .then((data: Show[]) => {
         const filtered = data
-          .filter((s: Show) => s.image && s.score > 7.5)
-          .slice(0, 5)
+  .filter((s: Show) => s.image && s.score >= 7.5 && s.genres.length > 0)
+  .sort((a: Show, b: Show) => b.score - a.score)
+  .slice(0, 5)
+        seasonalCache = filtered
         setShows(filtered)
         setLoading(false)
       })
@@ -64,8 +69,8 @@ function Hero({ watchedIds = [], onAdded }: Props) {
         genres: show.genres,
       })
       onAdded(show.id)
-    } catch (err: any) {
-      if (err.message === 'Show already on your list') onAdded(show.id)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'Show already on your list') onAdded(show.id)
     }
   }
 
@@ -162,7 +167,7 @@ function Hero({ watchedIds = [], onAdded }: Props) {
           </div>
         </div>
 
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <div
             onClick={() => window.location.href = `/show/${show.id}`}
             className="w-[260px] h-[370px] rounded-xl overflow-hidden shadow-2xl cursor-pointer hover:opacity-90 transition-all"

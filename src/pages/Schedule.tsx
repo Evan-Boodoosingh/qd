@@ -25,17 +25,34 @@ type ScheduleTab = 'mySchedule' | 'fullSchedule'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+const getTimezoneOffsetMs = (timezone: string): number => {
+  try {
+    const now = new Date()
+    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
+    return tzDate.getTime() - utcDate.getTime()
+  } catch {
+    return 0
+  }
+}
+
 const convertToLocalTime = (time: string, timezone: string): string => {
   try {
     const [hours, minutes] = time.split(':').map(Number)
-    const date = new Date()
-    date.setHours(hours, minutes, 0, 0)
-    return new Intl.DateTimeFormat('en-US', {
+    const now = new Date()
+    const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+    const formatter = new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: timezone,
       hour12: true,
-    }).format(date)
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    })
+    const utcDate = new Date(
+      new Date(dateStr + 'Z').getTime() -
+      getTimezoneOffsetMs(timezone) +
+      getTimezoneOffsetMs('UTC')
+    )
+    return formatter.format(utcDate)
   } catch {
     return time
   }
@@ -71,10 +88,10 @@ function Schedule() {
 
   useEffect(() => {
     fetchCurrentSeason()
-      .then((data) => {
+      .then((data: Show[]) => {
         const normalized = data
-          .filter((s: any) => s.day && s.day !== 'Unknown')
-          .map((s: any) => ({
+          .filter((s) => s.day && s.day !== 'Unknown')
+          .map((s) => ({
             ...s,
             day: normalizeDayName(s.day),
             onMyList: false,
@@ -82,8 +99,8 @@ function Schedule() {
             dubbed: false,
             isOngoing: s.isOngoing || false,
           }))
-          .filter((s: any, index: number, self: any[]) =>
-            index === self.findIndex((t: any) => t.id === s.id)
+          .filter((s, index, self) =>
+            index === self.findIndex((t) => t.id === s.id)
           )
         setShows(normalized)
         setLoading(false)
@@ -92,10 +109,10 @@ function Schedule() {
 
     if (isLoggedIn) {
       fetchWatchlist()
-        .then((data) => setWatchedIds(data.map((e: any) => e.showId)))
+        .then((data: { showId: number }[]) => setWatchedIds(data.map((e) => e.showId)))
         .catch(() => {})
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddToList = async (e: React.MouseEvent, show: Show) => {
     e.stopPropagation()
@@ -105,11 +122,12 @@ function Schedule() {
         showName: show.title,
         image: show.image,
         totalEpisodes: show.episodes,
+        airingEpisode: null,
         genres: show.genres,
       })
       setWatchedIds(prev => [...prev, show.id])
-    } catch (err: any) {
-      if (err.message === 'Show already on your list') {
+    } catch (err) {
+      if (err instanceof Error && err.message === 'Show already on your list') {
         setWatchedIds(prev => [...prev, show.id])
       }
     }
@@ -251,16 +269,16 @@ function Schedule() {
                   onClick={() => window.location.href = `/show/${show.id}`}
                   className="bg-[#1a1815] border border-white/7 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
                 >
-                  <div className="text-center flex-shrink-0 w-20">
+                  <div className="text-center shrink-0 w-20">
                     <div className="text-[12px] font-medium text-[#f0ede8]">
                       {show.time ? convertToLocalTime(show.time, show.timezone) : 'TBA'}
                     </div>
                     <div className="text-[10px] text-[#5a5650]">Local time</div>
                   </div>
 
-                  <div className="w-px h-10 bg-white/10 flex-shrink-0" />
+                  <div className="w-px h-10 bg-white/10 shrink-0" />
 
-                  <div className="w-10 h-14 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0">
                     <img
                       src={proxyImage(show.image)}
                       alt={show.title}
@@ -272,7 +290,7 @@ function Schedule() {
                     <div className="flex items-center gap-2 mb-1">
                       <div className="text-[13px] font-medium text-[#f0ede8] truncate">{show.title}</div>
                       {show.isOngoing && (
-                        <span className="text-[9px] text-[#7F77DD] bg-[#7F77DD]/10 border border-[#7F77DD]/25 px-2 py-0.5 rounded-full flex-shrink-0">
+                        <span className="text-[9px] text-[#7F77DD] bg-[#7F77DD]/10 border border-[#7F77DD]/25 px-2 py-0.5 rounded-full shrink-0">
                           Ongoing
                         </span>
                       )}
@@ -284,13 +302,13 @@ function Schedule() {
                     </div>
                   </div>
 
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <span className="text-[10px] text-[#9a9590]">♥ {show.score}</span>
                   </div>
 
                   {isLoggedIn && (
                     <button
-                      className="text-[11px] font-medium px-3 py-1.5 rounded-full flex-shrink-0 cursor-pointer hover:opacity-90 transition-all"
+                      className="text-[11px] font-medium px-3 py-1.5 rounded-full shrink-0 cursor-pointer hover:opacity-90 transition-all"
                       style={{
                         backgroundColor: watchedIds.includes(show.id) ? 'rgba(209,57,36,0.2)' : '#D13924',
                         color: watchedIds.includes(show.id) ? '#D13924' : '#fff'

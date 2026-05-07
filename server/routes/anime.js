@@ -1,87 +1,238 @@
 const express = require('express')
 const router = express.Router()
 
-let cachedSeason = null
-let cacheTime = null
-const CACHE_DURATION = 60 * 60 * 1000
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const CACHE_DURATION = 60 * 60 * 1000 // 1 hour
+
+// ─── In-memory caches ────────────────────────────────────────────────────────
+
+const cache = {
+  season: { data: null, time: null },
+  seasonal: { data: null, time: null },
+}
 
 const episodeCache = {}
-const EPISODE_CACHE_DURATION = 60 * 60 * 1000
-
 const episodeDetailCache = {}
-const EPISODE_DETAIL_CACHE_DURATION = 60 * 60 * 1000
 
-const jikanFetch = (url) => fetch(url, {
-  headers: { 'User-Agent': 'Queued/1.0' }
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const jikanFetch = (url) =>
+  fetch(url, { headers: { 'User-Agent': 'Queued/1.0' } })
+
+const isCacheValid = (entry) =>
+  entry.data && entry.time && Date.now() - entry.time < CACHE_DURATION
+
+const getCurrentSeason = () => {
+  const month = new Date().getMonth()
+  if (month < 3) return 'winter'
+  if (month < 6) return 'spring'
+  if (month < 9) return 'summer'
+  return 'fall'
+}
+
+const normalizeDayFromJikan = (day) => {
+  const map = {
+    Mondays: 'Monday', Tuesdays: 'Tuesday', Wednesdays: 'Wednesday',
+    Thursdays: 'Thursday', Fridays: 'Friday', Saturdays: 'Saturday', Sundays: 'Sunday',
+  }
+  return map[day] || day
+}
+
+// Convert AniList Unix timestamp to day of week (in JST, where most anime airs)
+const getDayFromTimestamp = (timestamp) => {
+  if (!timestamp) return 'Unknown'
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  // Convert to JST (UTC+9) before getting day
+  const jstDate = new Date((timestamp + 9 * 3600) * 1000)
+  return days[jstDate.getUTCDay()]
+}
+
+// Convert AniList Unix timestamp to JST time string
+const getTimeFromTimestamp = (timestamp) => {
+  if (!timestamp) return null
+  const jstDate = new Date((timestamp + 9 * 3600) * 1000)
+  const hours = jstDate.getUTCHours().toString().padStart(2, '0')
+  const mins = jstDate.getUTCMinutes().toString().padStart(2, '0')
+  return `${hours}:${mins}`
+}
+
+const mapJikanShow = (show, isOngoing = false) => ({
+  id: show.mal_id,
+  title: show.title_english || show.title,
+  image: show.images?.jpg?.large_image_url || null,
+  score: show.score || 0,
+  genres: show.genres?.map((g) => g.name) || [],
+  day: normalizeDayFromJikan(show.broadcast?.day) || 'Unknown',
+  time: show.broadcast?.time || null,
+  timezone: show.broadcast?.timezone || 'Asia/Tokyo',
+  episodes: show.episodes || null,
+  synopsis: show.synopsis || '',
+  trailer: show.trailer?.embed_url || null,
+  studio: show.studios?.[0]?.name || 'Unknown',
+  season: show.season || getCurrentSeason(),
+  year: show.year || new Date().getFullYear(),
+  airing: show.airing || false,
+  url: show.url,
+  isOngoing,
 })
 
-// GET /api/anime/season
+// ─── Routes ──────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/anime/season
+ * Primary schedule data — AniList for coverage + carryovers,
+ * Jikan for accurate JST broadcast times when available.
+ */
 router.get('/season', async (req, res) => {
   try {
-    if (cachedSeason && cacheTime && Date.now() - cacheTime < CACHE_DURATION) {
-      return res.json(cachedSeason)
+    if (isCacheValid(cache.season)) {
+      return res.json(cache.season.data)
     }
 
-    const [seasonalRes, ongoingRes] = await Promise.all([
+    const anilistQuery = `
+      query {
+        Page(page: 1, perPage: 50) {
+          media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
+            id
+            idMal
+            title { english romaji }
+            nextAiringEpisode { airingAt episode }
+            airingSchedule(notYetAired: false, perPage: 1) { nodes { airingAt episode } }
+            coverImage { large }
+            genres
+            averageScore
+            episodes
+            studios(isMain: true) { nodes { name } }
+          }
+        }
+      }
+    `
+
+    // Fetch AniList and Jikan in parallel
+    const [anilistRes, jikanRes] = await Promise.all([
+      fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ query: anilistQuery }),
+      }),
       jikanFetch('https://api.jikan.moe/v4/seasons/now?limit=25'),
-      jikanFetch('https://api.jikan.moe/v4/anime?status=airing&type=tv&order_by=members&sort=desc&limit=25')
     ])
 
-    const [seasonalData, ongoingData] = await Promise.all([
-      seasonalRes.json(),
-      ongoingRes.json()
+    const [anilistData, jikanData] = await Promise.all([
+      anilistRes.json(),
+      jikanRes.json(),
     ])
 
-    const mapShow = (show, isOngoing) => ({
-      id: show.mal_id,
-      title: show.title_english || show.title,
-      image: show.images?.jpg?.large_image_url || null,
-      score: show.score || 0,
-      genres: show.genres?.map((g) => g.name) || [],
-      day: show.broadcast?.day || 'Unknown',
-      time: show.broadcast?.time || null,
-      timezone: show.broadcast?.timezone || 'Asia/Tokyo',
-      episodes: show.episodes || null,
-      synopsis: show.synopsis || '',
-      trailer: show.trailer?.embed_url || null,
-      studio: show.studios?.[0]?.name || 'Unknown',
-      season: show.season,
-      year: show.year,
-      airing: show.airing,
-      url: show.url,
-      isOngoing,
-    })
+    const anilistShows = anilistData?.data?.Page?.media || []
+    const jikanShows = jikanData?.data || []
 
-    const seasonal = (seasonalData.data || []).map((s) => mapShow(s, false))
-    const ongoing = (ongoingData.data || []).map((s) => mapShow(s, true))
+    // Build MAL ID → Jikan show lookup for broadcast time enrichment
+    const jikanMap = {}
+    for (const show of jikanShows) {
+      jikanMap[show.mal_id] = show
+    }
 
+    const currentSeason = getCurrentSeason()
+    const currentYear = new Date().getFullYear()
     const seenIds = new Set()
     const merged = []
 
-    for (const show of seasonal) {
-      if (!seenIds.has(show.id)) {
-        seenIds.add(show.id)
-        merged.push(show)
-      }
+    // Process AniList shows first (better coverage including carryovers)
+    for (const show of anilistShows) {
+      if (!show.idMal || seenIds.has(show.idMal)) continue
+      seenIds.add(show.idMal)
+
+      const jikan = jikanMap[show.idMal]
+
+      // Prefer Jikan broadcast data (JST, accurate) over AniList timestamps (UTC, can drift)
+      const hasJikanBroadcast = !!(jikan?.broadcast?.time)
+      const airTimestamp = show.nextAiringEpisode?.airingAt || show.airingSchedule?.nodes?.[0]?.airingAt || null
+
+      const day = hasJikanBroadcast
+        ? normalizeDayFromJikan(jikan.broadcast.day)
+        : getDayFromTimestamp(airTimestamp)
+
+      const time = hasJikanBroadcast
+        ? jikan.broadcast.time
+        : getTimeFromTimestamp(airTimestamp)
+
+      const timezone = hasJikanBroadcast
+        ? (jikan.broadcast.timezone || 'Asia/Tokyo')
+        : 'Asia/Tokyo' // AniList timestamps converted to JST above
+
+      const jikanSeason = jikan?.season
+      const jikanYear = jikan?.year
+      const isOngoing = !!(jikanSeason && (jikanSeason !== currentSeason || jikanYear !== currentYear))
+
+      merged.push({
+        id: show.idMal,
+        anilistId: show.id,
+        title: show.title?.english || show.title?.romaji,
+        image: show.coverImage?.large || jikan?.images?.jpg?.large_image_url || null,
+        score: jikan?.score || (show.averageScore ? show.averageScore / 10 : 0),
+        genres: show.genres || jikan?.genres?.map((g) => g.name) || [],
+        day,
+        time,
+        timezone,
+        episodes: show.episodes || jikan?.episodes || null,
+        synopsis: jikan?.synopsis || '',
+        trailer: jikan?.trailer?.embed_url || null,
+        studio: show.studios?.nodes?.[0]?.name || jikan?.studios?.[0]?.name || 'Unknown',
+        season: jikanSeason || currentSeason,
+        year: jikanYear || currentYear,
+        airing: true,
+        url: jikan?.url || `https://myanimelist.net/anime/${show.idMal}`,
+        isOngoing,
+      })
     }
 
-    for (const show of ongoing) {
-      if (!seenIds.has(show.id)) {
-        seenIds.add(show.id)
-        merged.push(show)
-      }
+    // Add any Jikan seasonal shows not already covered by AniList
+    for (const show of jikanShows) {
+      if (seenIds.has(show.mal_id)) continue
+      seenIds.add(show.mal_id)
+      merged.push(mapJikanShow(show, false))
     }
 
-    cachedSeason = { shows: merged, fetchedAt: new Date().toISOString() }
-    cacheTime = Date.now()
+    const result = { shows: merged, fetchedAt: new Date().toISOString() }
+    cache.season = { data: result, time: Date.now() }
 
-    res.json(cachedSeason)
+    res.json(result)
   } catch (err) {
+    console.error('SEASON ERROR:', err)
     res.status(500).json({ message: 'Failed to fetch season data', error: err.message })
   }
 })
 
-// GET /api/anime/show/:id
+/**
+ * GET /api/anime/seasonal
+ * Jikan-only seasonal data for Hero carousel and Trending section.
+ * No AniList — these components need score/synopsis data Jikan provides cleanly.
+ */
+router.get('/seasonal', async (req, res) => {
+  try {
+    if (isCacheValid(cache.seasonal)) {
+      return res.json(cache.seasonal.data)
+    }
+
+    const response = await jikanFetch('https://api.jikan.moe/v4/seasons/now?limit=25')
+    const data = await response.json()
+    const shows = (data.data || []).map((show) => mapJikanShow(show, false))
+
+    const result = { shows }
+    cache.seasonal = { data: result, time: Date.now() }
+
+    res.json(result)
+  } catch (err) {
+    console.error('SEASONAL ERROR:', err)
+    res.status(500).json({ message: 'Failed to fetch seasonal data', error: err.message })
+  }
+})
+
+/**
+ * GET /api/anime/show/:id
+ * Full show details from Jikan including episode list.
+ */
 router.get('/show/:id', async (req, res) => {
   try {
     const { id } = req.params
@@ -94,17 +245,18 @@ router.get('/show/:id', async (req, res) => {
     }
 
     const show = showData.data
-
     let episodes = []
     let totalEpisodePages = 1
+
     try {
-      const now = Date.now()
       const cacheKey = `${id}-page-1`
-      if (episodeCache[cacheKey] && now - episodeCache[cacheKey].time < EPISODE_CACHE_DURATION) {
+      const now = Date.now()
+
+      if (episodeCache[cacheKey] && now - episodeCache[cacheKey].time < CACHE_DURATION) {
         episodes = episodeCache[cacheKey].data
         totalEpisodePages = episodeCache[cacheKey].totalPages
       } else {
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await new Promise((resolve) => setTimeout(resolve, 500))
         const episodesRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes?page=1`)
         const episodesData = await episodesRes.json()
         episodes = episodesData.data || []
@@ -126,8 +278,6 @@ router.get('/show/:id', async (req, res) => {
       rank: show.rank || null,
       popularity: show.popularity || null,
       members: show.members || null,
-      favorites: show.favorites || null,
-      communityScore: show.score || 0,
       genres: show.genres?.map((g) => g.name) || [],
       themes: show.themes?.map((t) => t.name) || [],
       demographics: show.demographics?.map((d) => d.name) || [],
@@ -156,14 +306,8 @@ router.get('/show/:id', async (req, res) => {
           url: e.url,
         })) || [],
       })) || [],
-      streaming: show.streaming?.map((s) => ({
-        name: s.name,
-        url: s.url,
-      })) || [],
-      external: show.external?.map((e) => ({
-        name: e.name,
-        url: e.url,
-      })) || [],
+      streaming: show.streaming?.map((s) => ({ name: s.name, url: s.url })) || [],
+      external: show.external?.map((e) => ({ name: e.name, url: e.url })) || [],
       openingThemes: show.theme?.openings || [],
       endingThemes: show.theme?.endings || [],
       episodeList: episodes
@@ -183,7 +327,10 @@ router.get('/show/:id', async (req, res) => {
   }
 })
 
-// GET /api/anime/show/:id/episodes?page=2
+/**
+ * GET /api/anime/show/:id/episodes?page=N
+ * Paginated episode list for a show.
+ */
 router.get('/show/:id/episodes', async (req, res) => {
   try {
     const { id } = req.params
@@ -191,13 +338,14 @@ router.get('/show/:id/episodes', async (req, res) => {
     const cacheKey = `${id}-page-${page}`
     const now = Date.now()
 
-    if (episodeCache[cacheKey] && now - episodeCache[cacheKey].time < EPISODE_CACHE_DURATION) {
+    if (episodeCache[cacheKey] && now - episodeCache[cacheKey].time < CACHE_DURATION) {
       return res.json({ episodes: episodeCache[cacheKey].data, page })
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500))
     const episodesRes = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes?page=${page}`)
     const episodesData = await episodesRes.json()
+
     const episodes = (episodesData.data || [])
       .map((ep) => ({
         number: ep.mal_id,
@@ -214,33 +362,34 @@ router.get('/show/:id/episodes', async (req, res) => {
 
     res.json({ episodes, page })
   } catch (err) {
+    console.error('EPISODES ERROR:', err)
     res.status(500).json({ message: 'Failed to fetch episodes', error: err.message })
   }
 })
 
-// GET /api/anime/show/:id/episode/:ep
+/**
+ * GET /api/anime/show/:id/episode/:ep
+ * Single episode detail with synopsis. Retried by frontend if synopsis is missing.
+ */
 router.get('/show/:id/episode/:ep', async (req, res) => {
   try {
     const { id, ep } = req.params
     const cacheKey = `${id}-${ep}`
     const now = Date.now()
 
-    // Only serve from cache if we actually have a synopsis
     if (
-      episodeDetailCache[cacheKey] &&
-      episodeDetailCache[cacheKey].data.synopsis &&
-      now - episodeDetailCache[cacheKey].time < EPISODE_DETAIL_CACHE_DURATION
+      episodeDetailCache[cacheKey]?.data?.synopsis &&
+      now - episodeDetailCache[cacheKey].time < CACHE_DURATION
     ) {
       return res.json(episodeDetailCache[cacheKey].data)
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     const response = await jikanFetch(`https://api.jikan.moe/v4/anime/${id}/episodes/${ep}`)
     const data = await response.json()
 
     if (!data.data) {
-      // Don't cache — return empty and let frontend retry
       return res.json({
         number: parseInt(ep),
         title: `Episode ${ep}`,
@@ -252,7 +401,6 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
     }
 
     const episode = data.data
-
     const result = {
       number: episode.mal_id,
       title: episode.title || `Episode ${episode.mal_id}`,
@@ -266,7 +414,6 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
       forumUrl: episode.forum_url || null,
     }
 
-    // Only cache if we got a synopsis
     if (result.synopsis) {
       episodeDetailCache[cacheKey] = { data: result, time: now }
     }
@@ -278,16 +425,21 @@ router.get('/show/:id/episode/:ep', async (req, res) => {
   }
 })
 
-// GET /api/anime/search
+/**
+ * GET /api/anime/search?q=query
+ * Search anime by title.
+ */
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query
     if (!q) return res.status(400).json({ message: 'Query required' })
 
-    const response = await jikanFetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10&type=tv`)
+    const response = await jikanFetch(
+      `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10&type=tv`
+    )
     const data = await response.json()
 
-    const results = data.data.map((show) => ({
+    const results = (data.data || []).map((show) => ({
       id: show.mal_id,
       title: show.title_english || show.title,
       image: show.images?.jpg?.large_image_url || null,
@@ -295,7 +447,7 @@ router.get('/search', async (req, res) => {
       genres: show.genres?.map((g) => g.name) || [],
       episodes: show.episodes || null,
       synopsis: show.synopsis || '',
-      year: show.year,
+      year: show.year || null,
     }))
 
     res.json({ results })
@@ -305,15 +457,79 @@ router.get('/search', async (req, res) => {
   }
 })
 
-// GET /api/anime/image — image proxy
+/**
+ * GET /api/anime/top
+ * All time top rated anime.
+ */
+router.get('/top', async (req, res) => {
+  try {
+    const response = await jikanFetch('https://api.jikan.moe/v4/top/anime?type=tv&limit=25')
+    const data = await response.json()
+
+    const results = (data.data || []).map((show) => ({
+      id: show.mal_id,
+      title: show.title_english || show.title,
+      image: show.images?.jpg?.large_image_url || null,
+      score: show.score || 0,
+      rank: show.rank || null,
+      genres: show.genres?.map((g) => g.name) || [],
+      episodes: show.episodes || null,
+      year: show.year || null,
+      studio: show.studios?.[0]?.name || 'Unknown',
+      members: show.members || 0,
+    }))
+
+    res.json({ results })
+  } catch (err) {
+    console.error('TOP ERROR:', err)
+    res.status(500).json({ message: 'Failed to fetch top anime', error: err.message })
+  }
+})
+
+/**
+ * GET /api/anime/popular
+ * Most popular anime by member count.
+ */
+router.get('/popular', async (req, res) => {
+  try {
+    const response = await jikanFetch(
+      'https://api.jikan.moe/v4/top/anime?type=tv&filter=bypopularity&limit=25'
+    )
+    const data = await response.json()
+
+    const results = (data.data || []).map((show) => ({
+      id: show.mal_id,
+      title: show.title_english || show.title,
+      image: show.images?.jpg?.large_image_url || null,
+      score: show.score || 0,
+      rank: show.rank || null,
+      genres: show.genres?.map((g) => g.name) || [],
+      episodes: show.episodes || null,
+      year: show.year || null,
+      studio: show.studios?.[0]?.name || 'Unknown',
+      members: show.members || 0,
+    }))
+
+    res.json({ results })
+  } catch (err) {
+    console.error('POPULAR ERROR:', err)
+    res.status(500).json({ message: 'Failed to fetch popular anime', error: err.message })
+  }
+}) 
+
+/**
+ * GET /api/anime/image?url=...
+ * Image proxy to bypass CORS on Jikan/AniList CDN images.
+ */
 router.get('/image', async (req, res) => {
   try {
     const { url } = req.query
     if (!url) return res.status(400).json({ message: 'URL required' })
 
     const response = await fetch(decodeURIComponent(url), {
-      headers: { 'User-Agent': 'Queued/1.0' }
+      headers: { 'User-Agent': 'Queued/1.0' },
     })
+
     if (!response.ok) throw new Error('Failed to fetch image')
 
     const contentType = response.headers.get('content-type') || 'image/jpeg'

@@ -8,6 +8,7 @@ type SearchResult = {
   title: string
   year: number | null
   genres: string[]
+  episodes: number | null
 }
 
 function NewThread() {
@@ -21,6 +22,7 @@ function NewThread() {
     searchParams.get('showId') ? Number(searchParams.get('showId')) : null
   )
   const [selectedShowName, setSelectedShowName] = useState(searchParams.get('showName') || '')
+  const [selectedShowEpisodes, setSelectedShowEpisodes] = useState<number | null>(null)
   const [genres, setGenres] = useState<string[]>([])
   const [showSearch, setShowSearch] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -44,7 +46,10 @@ function NewThread() {
     if (!selectedShowId) return
     fetch(`http://localhost:3001/api/anime/show/${selectedShowId}`)
       .then(res => res.json())
-      .then(data => { if (data.genres) setGenres(data.genres) })
+      .then(data => {
+        if (data.genres) setGenres(data.genres)
+        if (data.episodes) setSelectedShowEpisodes(data.episodes)
+      })
       .catch(() => {})
   }, [selectedShowId])
 
@@ -80,6 +85,7 @@ function NewThread() {
     setSelectedShowId(result.id)
     setSelectedShowName(result.title)
     setGenres(result.genres)
+    setSelectedShowEpisodes(result.episodes)
     setShowSearch('')
     setShowDropdown(false)
   }
@@ -92,7 +98,6 @@ function NewThread() {
 
   const handleStep2Continue = () => {
     if (threadType === 'episode' && !episodeNumber) { setError('Please enter an episode number'); return }
-    if ((threadType === 'episode' || threadType === 'season') && !seasonNumber) { setError('Please enter a season number'); return }
     setError('')
     setStep(3)
   }
@@ -115,7 +120,7 @@ function NewThread() {
           threadTitle: title,
           threadType,
           episode: threadType === 'episode' ? Number(episodeNumber) : undefined,
-          season: threadType === 'episode' || threadType === 'season' ? Number(seasonNumber) : undefined,
+          season: threadType === 'episode' || threadType === 'season' ? Number(seasonNumber) || undefined : undefined,
           hasSpoiler,
           originalPost: body,
         }),
@@ -175,7 +180,7 @@ function NewThread() {
                     <div className="text-[11px] text-[#9a9590] mt-0.5">{genres.slice(0, 3).join(' · ')}</div>
                   </div>
                   <button
-                    onClick={() => { setSelectedShowId(null); setSelectedShowName(''); setGenres([]) }}
+                    onClick={() => { setSelectedShowId(null); setSelectedShowName(''); setGenres([]); setSelectedShowEpisodes(null) }}
                     className="text-[11px] text-[#9a9590] hover:text-[#f0ede8] cursor-pointer transition-all ml-4 shrink-0"
                   >
                     ✕ Change
@@ -207,6 +212,7 @@ function NewThread() {
                           <div className="text-[13px] text-[#f0ede8]">{result.title}</div>
                           <div className="text-[11px] text-[#9a9590] mt-0.5">
                             {result.year && `${result.year} · `}{result.genres.slice(0, 2).join(', ')}
+                            {result.episodes && ` · ${result.episodes} eps`}
                           </div>
                         </button>
                       ))}
@@ -261,7 +267,7 @@ function NewThread() {
                   {threadType === 'episode' && (
                     <div className="flex gap-3 ml-7" onClick={(e) => e.stopPropagation()}>
                       <div className="flex-1">
-                        <label className="text-[11px] text-[#9a9590] mb-1.5 block">Season #</label>
+                        <label className="text-[11px] text-[#9a9590] mb-1.5 block">Season # <span className="text-[#5a5650]">(optional)</span></label>
                         <input
                           autoFocus
                           type="number"
@@ -273,10 +279,13 @@ function NewThread() {
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="text-[11px] text-[#9a9590] mb-1.5 block">Episode #</label>
+                        <label className="text-[11px] text-[#9a9590] mb-1.5 block">
+                          Episode #{selectedShowEpisodes && <span className="text-[#5a5650] ml-1">max {selectedShowEpisodes}</span>}
+                        </label>
                         <input
                           type="number"
                           min={1}
+                          max={selectedShowEpisodes || undefined}
                           value={episodeNumber}
                           onChange={(e) => setEpisodeNumber(e.target.value)}
                           placeholder="12"
@@ -306,7 +315,7 @@ function NewThread() {
 
                   {threadType === 'season' && (
                     <div className="ml-7" onClick={(e) => e.stopPropagation()}>
-                      <label className="text-[11px] text-[#9a9590] mb-1.5 block">Season #</label>
+                      <label className="text-[11px] text-[#9a9590] mb-1.5 block">Season # <span className="text-[#5a5650]">(optional)</span></label>
                       <input
                         autoFocus
                         type="number"
@@ -374,9 +383,9 @@ function NewThread() {
                 <span className="text-[11px] text-[#5a5650] mx-2">·</span>
                 <span className="text-[11px] text-[#9a9590] capitalize">
                   {threadType === 'episode'
-                    ? `S${seasonNumber} Ep ${episodeNumber}`
+                    ? `${seasonNumber ? `S${seasonNumber} ` : ''}Ep ${episodeNumber}`
                     : threadType === 'season'
-                    ? `Season ${seasonNumber}`
+                    ? seasonNumber ? `Season ${seasonNumber}` : 'Season'
                     : 'Show'}
                 </span>
               </div>

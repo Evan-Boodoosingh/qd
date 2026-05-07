@@ -24,6 +24,8 @@ import { fetchWatchlist } from "./services/watchlist";
 import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 import { ToastProvider } from "./components/Toast/Toast";
+import Nav from "./components/Nav/Nav";
+
 
 type WatchlistEntry = {
   showId: number
@@ -42,16 +44,17 @@ function HomePage() {
     setWatchedIds((prev) => [...prev, showId]);
   };
 
-  return (
-    <div className="bg-[#0f0e0d] min-h-screen text-white">
-      <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
-      <Calendar />
-      <Friends />
+return (
+  <div className="bg-[#0f0e0d] min-h-screen text-white">
+    <Nav />
+    <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
+    <Calendar />
+    <Friends />
       <Discussions />
       {/* <Liked /> */}
-      <Trending watchedIds={watchedIds} onAdded={handleAddedToList} />
-      <PopularDiscussions />
-    </div>
+    <Trending watchedIds={watchedIds} onAdded={handleAddedToList} />
+    <PopularDiscussions />
+  </div>
   );
 }
 
