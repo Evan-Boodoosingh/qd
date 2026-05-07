@@ -25,34 +25,34 @@ type ScheduleTab = 'mySchedule' | 'fullSchedule'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
-const getTimezoneOffsetMs = (timezone: string): number => {
-  try {
-    const now = new Date()
-    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
-    return tzDate.getTime() - utcDate.getTime()
-  } catch {
-    return 0
-  }
-}
+
 
 const convertToLocalTime = (time: string, timezone: string): string => {
   try {
     const [hours, minutes] = time.split(':').map(Number)
     const now = new Date()
     const dateStr = `${now.toLocaleDateString('en-CA')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
-    const formatter = new Intl.DateTimeFormat('en-US', {
+    
+    // Create a formatter that interprets the time AS IF it's in the source timezone
+    const sourceTzFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    })
+    
+    // Get UTC equivalent by finding what UTC time corresponds to this local time in the source timezone
+    const tempDate = new Date(dateStr + 'Z')
+    const parts = sourceTzFormatter.formatToParts(tempDate)
+    const tzHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0')
+    const tzMin = parseInt(parts.find(p => p.type === 'minute')?.value || '0')
+    const diffMs = ((hours - tzHour) * 60 + (minutes - tzMin)) * 60 * 1000
+    const correctedDate = new Date(tempDate.getTime() + diffMs)
+
+    return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    })
-    const utcDate = new Date(
-      new Date(dateStr + 'Z').getTime() -
-      getTimezoneOffsetMs(timezone) +
-      getTimezoneOffsetMs('UTC')
-    )
-    return formatter.format(utcDate)
+    }).format(correctedDate)
   } catch {
     return time
   }
