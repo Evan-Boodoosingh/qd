@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
 import { proxyImage } from '../services/anime'
+import { Search as SearchIcon } from 'lucide-react'
 
 type AnimeResult = {
   id: number
@@ -20,7 +21,7 @@ type UserResult = {
 }
 
 function Search() {
-  const [query, setQuery] = useState('')
+const [query, setQuery] = useState('')
   const [animeResults, setAnimeResults] = useState<AnimeResult[]>([])
   const [userResults, setUserResults] = useState<UserResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -30,12 +31,7 @@ function Search() {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
 
   useEffect(() => {
-    if (!query.trim()) {
-      setAnimeResults([])
-      setUserResults([])
-      setSearched(false)
-      return
-    }
+    if (!query.trim()) return
 
     const delay = setTimeout(async () => {
       setLoading(true)
@@ -82,9 +78,7 @@ function Search() {
 
         {/* Search input */}
         <div className="relative mb-6">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5a5650] text-sm">
-            🔍
-          </div>
+          <SearchIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5a5650]" />
           <input
             type="text"
             value={query}
@@ -95,7 +89,12 @@ function Search() {
           />
           {query && (
             <button
-              onClick={() => setQuery('')}
+              onClick={() => {
+                setQuery('')
+                setAnimeResults([])
+                setUserResults([])
+                setSearched(false)
+              }}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5a5650] hover:text-[#9a9590] transition-all cursor-pointer text-sm"
             >
               ✕
@@ -161,7 +160,7 @@ function Search() {
 
         {/* Shows results */}
         {!loading && searched && activeTab === 'shows' && animeResults.length > 0 && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {animeResults.map((show) => (
               <div
                 key={show.id}

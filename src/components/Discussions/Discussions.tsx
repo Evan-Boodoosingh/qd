@@ -52,8 +52,6 @@ function Discussions() {
   const [loading, setLoading] = useState(!!token)
 
   useEffect(() => {
-    
-
     const fetchData = async () => {
       try {
         const [friendsRes, threadsRes] = await Promise.all([
@@ -106,18 +104,18 @@ function Discussions() {
 
   if (threads.length === 0) {
     return (
-      <div className="border-t border-white/5 py-10">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-6">
+      <div className="border-t border-white/5 py-8 md:py-10">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-between mb-5 md:mb-6">
             <div>
               <h2 className="text-sm font-medium text-[#f0ede8]">Active discussions in your circle</h2>
               <p className="text-[11px] text-[#9a9590] mt-0.5">Threads your mutuals are already talking in</p>
             </div>
             <span
               onClick={() => window.location.href = '/community'}
-              className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
+              className="text-[11px] text-[#D13924] cursor-pointer hover:underline shrink-0"
             >
-              See all threads
+              See all
             </span>
           </div>
           <div className="text-center py-12 bg-[#1a1815] border border-white/7 rounded-xl">
@@ -130,19 +128,19 @@ function Discussions() {
   }
 
   return (
-    <div className="border-t border-white/5 py-10">
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="border-t border-white/5 py-8 md:py-10">
+      <div className="max-w-6xl mx-auto px-4 md:px-6">
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5 md:mb-6">
           <div>
             <h2 className="text-sm font-medium text-[#f0ede8]">Active discussions in your circle</h2>
             <p className="text-[11px] text-[#9a9590] mt-0.5">Threads your mutuals are already talking in</p>
           </div>
           <span
             onClick={() => window.location.href = '/community'}
-            className="text-[11px] text-[#D13924] cursor-pointer hover:underline"
+            className="text-[11px] text-[#D13924] cursor-pointer hover:underline shrink-0"
           >
-            See all threads
+            See all
           </span>
         </div>
 
@@ -153,18 +151,21 @@ function Discussions() {
               onClick={() => window.location.href = `/thread/${thread._id}`}
               className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex">
+              {/* Thread header */}
+              <div className="flex items-start gap-2 mb-3">
+
+                {/* Friend avatars */}
+                <div className="flex shrink-0 mt-0.5">
                   {thread.friendParticipants.map((p, j) => {
                     const color = getColor(p._id)
                     return (
                       <div
                         key={p._id}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 border-[#1a1815]"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold border-2 border-[#1a1815]"
                         style={{
                           backgroundColor: `${color}35`,
                           color,
-                          marginLeft: j === 0 ? 0 : '-8px',
+                          marginLeft: j === 0 ? 0 : '-6px',
                           zIndex: thread.friendParticipants.length - j,
                           position: 'relative',
                         }}
@@ -175,51 +176,58 @@ function Discussions() {
                   })}
                 </div>
 
+                {/* Thread info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] text-[#9a9590]">
+                  <div className="text-[11px] text-[#9a9590] mb-0.5">
                     {thread.friendParticipants.length === 1
                       ? `${thread.friendParticipants[0].displayName || thread.friendParticipants[0].username} started a thread`
                       : `${thread.friendParticipants.length} friends talking about`}
                   </div>
                   <div className="text-[12px] text-[#D13924] font-medium truncate">
-                    {thread.show} —{' '}
-                    {thread.threadType === 'episode' && `S${thread.season} Ep ${thread.episode} · `}
-                    {thread.threadType === 'season' && `Season ${thread.season} · `}
-                    {thread.threadTitle}
+                    {thread.show}
+                    {thread.threadType === 'episode' && ` — S${thread.season} Ep ${thread.episode}`}
+                    {thread.threadType === 'season' && ` — Season ${thread.season}`}
+                    {' · '}{thread.threadTitle}
                   </div>
                 </div>
 
-                <span className={`text-[9px] px-2 py-0.5 rounded-full shrink-0 border ${
-                  thread.threadType === 'episode'
-                    ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
-                    : thread.threadType === 'season'
-                    ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
-                    : 'bg-white/5 text-[#9a9590] border-white/10'
-                }`}>
-                  {thread.threadType === 'episode' ? 'Episode' : thread.threadType === 'season' ? 'Season' : 'Show'}
-                </span>
+                {/* Badge + time */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full border hidden sm:inline ${
+                    thread.threadType === 'episode'
+                      ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
+                      : thread.threadType === 'season'
+                      ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
+                      : 'bg-white/5 text-[#9a9590] border-white/10'
+                  }`}>
+                    {thread.threadType === 'episode' ? 'Episode' : thread.threadType === 'season' ? 'Season' : 'Show'}
+                  </span>
+                  <span className="text-[10px] text-[#5a5650]">{timeAgo(thread.createdAt)}</span>
+                </div>
 
-                <span className="text-[10px] text-[#5a5650] shrink-0">{timeAgo(thread.createdAt)}</span>
               </div>
 
+              {/* Preview */}
               <div className={`text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 mb-3 line-clamp-2 ${
                 thread.hasSpoiler ? 'blur-sm select-none' : ''
               }`}>
                 {thread.originalPost}
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#9a9590]">
-                  <span className="text-[#D13924]">{thread.replies.length} replies</span> · {thread.friendParticipants.length} of your friends
+              {/* Footer */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-[#9a9590] truncate">
+                  <span className="text-[#D13924]">{thread.replies.length} replies</span>
+                  <span className="hidden sm:inline"> · {thread.friendParticipants.length} of your friends</span>
                 </span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     window.location.href = `/thread/${thread._id}`
                   }}
-                  className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
+                  className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer shrink-0"
                 >
-                  Join thread ›
+                  Join ›
                 </button>
               </div>
             </div>
