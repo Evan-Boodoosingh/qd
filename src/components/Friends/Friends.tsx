@@ -26,15 +26,13 @@ const getColor = (id: string) => colors[id.charCodeAt(0) % colors.length]
 function Friends() {
   const [friends, setFriends] = useState<Friend[]>([])
   const [myWatchlist, setMyWatchlist] = useState<WatchlistEntry[]>([])
-  const [loading, setLoading] = useState(true)
-
+ 
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+   const [loading, setLoading] = useState(!!token)
+
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
+  if (!token) return
 
     const fetchData = async () => {
       try {

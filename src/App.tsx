@@ -20,12 +20,12 @@ import Thread from "./pages/Thread";
 import Episode from "./pages/Episode";
 import NewThread from "./pages/NewThread";
 import Hero from "./components/Hero/Hero";
+import AiringToday from "./components/AiringToday/AiringToday";
 import { fetchWatchlist } from "./services/watchlist";
 import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 import { ToastProvider } from "./components/Toast/Toast";
 import Nav from "./components/Nav/Nav";
-
 
 type WatchlistEntry = {
   showId: number
@@ -44,17 +44,23 @@ function HomePage() {
     setWatchedIds((prev) => [...prev, showId]);
   };
 
-return (
-  <div className="bg-[#0f0e0d] min-h-screen text-white">
-    <Nav />
-    <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
-    <Calendar />
-    <Friends />
+  return (
+    <div className="bg-[#0f0e0d] min-h-screen text-white">
+      <Nav />
+      {/* Mobile only — airing today timeline */}
+      <AiringToday />
+      {/* Desktop layout — unchanged */}
+      <div className="hidden lg:block">
+        <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
+      </div>
+      <div className="hidden md:block">
+  <Calendar />
+</div>
+      {/* <Friends /> */}
       <Discussions />
-      {/* <Liked /> */}
-    <Trending watchedIds={watchedIds} onAdded={handleAddedToList} />
-    <PopularDiscussions />
-  </div>
+      <Trending watchedIds={watchedIds} onAdded={handleAddedToList} />
+      <PopularDiscussions />
+    </div>
   );
 }
 

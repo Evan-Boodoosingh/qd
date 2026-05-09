@@ -123,7 +123,7 @@ function MyList() {
     return (
       <div className="bg-[#0f0e0d] min-h-screen text-white">
         <Nav />
-        <div className="px-6 py-8 max-w-5xl mx-auto flex flex-col gap-3">
+        <div className="px-4 md:px-6 py-8 max-w-5xl mx-auto flex flex-col gap-3">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-[#1a1815] border border-white/7 rounded-xl h-20 animate-pulse" />
           ))}
@@ -139,7 +139,7 @@ function MyList() {
     >
       <Nav />
 
-      <div className="px-6 py-8 max-w-5xl mx-auto">
+      <div className="px-4 md:px-6 py-8 max-w-5xl mx-auto">
 
         {/* Header */}
         <div className="mb-6">
@@ -149,28 +149,80 @@ function MyList() {
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1 mb-6 w-fit">
-          {tabs.map((tab) => {
-            const count = watchlist.filter(e => e.status === tab.value).length
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
-                className={`px-5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === tab.value ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
-                }`}
-                style={activeTab === tab.value ? { backgroundColor: '#D13924' } : {}}
-              >
-                {tab.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  activeTab === tab.value ? 'bg-white/20' : 'bg-white/5'
-                }`}>
-                  {count}
+{/* Tabs — dropdown on mobile, full row on desktop */}
+        <div className="mb-6">
+
+          {/* Mobile dropdown */}
+          <div className="relative sm:hidden" style={{ zIndex: openDropdown === 'tabs' ? 40 : 1 }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === 'tabs' ? null : 'tabs') }}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[#1a1815] border border-white/10 text-[13px] text-[#f0ede8] cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <span>{tabs.find(t => t.value === activeTab)?.label}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#D13924]/20 text-[#D13924]">
+                  {watchlist.filter(e => e.status === activeTab).length}
                 </span>
-              </button>
-            )
-          })}
+              </div>
+              <span className="text-[#5a5650] text-[10px]">▾</span>
+            </button>
+            {openDropdown === 'tabs' && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute top-full left-0 right-0 mt-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl"
+                style={{ zIndex: 50 }}
+              >
+                {tabs.map((tab) => {
+                  const count = watchlist.filter(e => e.status === tab.value).length
+                  return (
+                    <button
+                      key={tab.value}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActiveTab(tab.value)
+                        setOpenDropdown(null)
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-[13px] transition-all cursor-pointer ${
+                        activeTab === tab.value
+                          ? 'text-white bg-[#D13924]'
+                          : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        activeTab === tab.value ? 'bg-white/20' : 'bg-white/10'
+                      }`}>{count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Tablet and desktop — full tab row */}
+          <div className="hidden sm:flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1 w-fit">
+            {tabs.map((tab) => {
+              const count = watchlist.filter(e => e.status === tab.value).length
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    activeTab === tab.value ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
+                  }`}
+                  style={activeTab === tab.value ? { backgroundColor: '#D13924' } : {}}
+                >
+                  {tab.label}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    activeTab === tab.value ? 'bg-white/20' : 'bg-white/5'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
         </div>
 
         {/* Empty state */}
@@ -181,204 +233,235 @@ function MyList() {
           </div>
         )}
 
-        {/* Column headers */}
         {filteredShows.length > 0 && (
           <>
-         <div className="grid items-center gap-4 px-4 mb-2"
-  style={{ gridTemplateColumns: '56px 1fr 160px 160px 100px 32px' }}
->
-  <div />
-  <div className="text-[10px] text-[#5a5650] uppercase tracking-wider">Title</div>
-  <div className="text-[10px] text-[#5a5650] uppercase tracking-wider pl-3">Status</div>
-  <div className="text-[10px] text-[#5a5650] uppercase tracking-wider text-center">Progress</div>
-  <div className="text-[10px] text-[#5a5650] uppercase tracking-wider text-center">Score</div>
-  <div />
-</div>
+            {/* ── Desktop table (lg+) ───────────────────────────────── */}
+            <div className="hidden lg:block">
+              <div className="grid items-center gap-4 px-4 mb-2"
+                style={{ gridTemplateColumns: '56px 1fr 160px 160px 100px 32px' }}
+              >
+                <div />
+                <div className="text-[10px] text-[#5a5650] uppercase tracking-wider">Title</div>
+                <div className="text-[10px] text-[#5a5650] uppercase tracking-wider pl-3">Status</div>
+                <div className="text-[10px] text-[#5a5650] uppercase tracking-wider text-center">Progress</div>
+                <div className="text-[10px] text-[#5a5650] uppercase tracking-wider text-center">Score</div>
+                <div />
+              </div>
 
-            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
+                {filteredShows.map((show) => (
+                  <div
+                    key={show._id}
+                    className="bg-[#1a1815] border border-white/7 rounded-xl hover:border-white/15 transition-all group"
+                  >
+                    <div
+                      className="grid items-center gap-4 px-4 py-3"
+                      style={{ gridTemplateColumns: '56px 1fr 160px 160px 100px 32px' }}
+                    >
+                      {/* Poster */}
+                      <div
+                        onClick={() => window.location.href = `/show/${show.showId}`}
+                        className="w-14 h-20 rounded-lg overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition-all"
+                      >
+                        {show.image ? (
+                          <img src={proxyImage(show.image)} alt={show.showName} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-white/5 flex items-center justify-center text-[#5a5650] text-[9px]">No img</div>
+                        )}
+                      </div>
+
+                      {/* Title */}
+                      <div onClick={() => window.location.href = `/show/${show.showId}`} className="min-w-0 cursor-pointer">
+                        <div className="text-[13px] font-medium text-[#f0ede8] truncate mb-1 hover:text-[#D13924] transition-all">{show.showName}</div>
+                        <div className="text-[11px] text-[#5a5650] truncate">{show.genres.slice(0, 2).join(' · ') || 'Anime'}</div>
+                      </div>
+
+                      {/* Status dropdown */}
+                      <div className="relative" style={{ zIndex: openDropdown === show._id ? 30 : 1 }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === show._id ? null : show._id); setOpenRating(null) }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-[12px] text-[#f0ede8] hover:bg-white/10 transition-all cursor-pointer"
+                        >
+                          <span>{statusLabels[show.status]}</span>
+                          <span className="text-[#5a5650] ml-2 text-[10px]">▾</span>
+                        </button>
+                        {openDropdown === show._id && (
+                          <div onClick={(e) => e.stopPropagation()} className="absolute top-full left-0 right-0 mt-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl" style={{ zIndex: 50 }}>
+                            {tabs.map((tab) => (
+                              <button
+                                key={tab.value}
+                                onClick={(e) => { e.stopPropagation(); handleStatusChange(show.showId, tab.value, show.totalEpisodes) }}
+                                className={`w-full text-left px-3 py-2.5 text-[12px] transition-all cursor-pointer ${show.status === tab.value ? 'text-white bg-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'}`}
+                              >
+                                {tab.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Progress */}
+                      <div>
+                        {(show.status === 'watching' || show.status === 'completed') ? (
+                          <div className="flex items-center gap-2 justify-center">
+                            {show.status === 'watching' && (
+                              <button onClick={(e) => { e.stopPropagation(); handleEpisodeChange(show.showId, -1, show.currentEpisode, show.totalEpisodes, show.airingEpisode) }} className="text-[#5a5650] hover:text-[#f0ede8] transition-all cursor-pointer text-[16px] leading-none w-5 text-center">−</button>
+                            )}
+                            <span className="text-[12px] text-[#f0ede8] tabular-nums">
+                              {show.currentEpisode}<span className="text-[#5a5650]"> / {show.airingEpisode ?? show.totalEpisodes ?? '?'}</span>
+                            </span>
+                            {show.status === 'watching' && (
+                              <button onClick={(e) => { e.stopPropagation(); handleEpisodeChange(show.showId, 1, show.currentEpisode, show.totalEpisodes, show.airingEpisode) }} className="text-[#5a5650] hover:text-[#f0ede8] transition-all cursor-pointer text-[16px] leading-none w-5 text-center">+</button>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[12px] text-[#5a5650] text-center w-full block">—</span>
+                        )}
+                      </div>
+
+                      {/* Score */}
+                      <div className="relative" style={{ zIndex: openRating === show._id ? 30 : 1 }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenRating(openRating === show._id ? null : show._id); setOpenDropdown(null) }}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer w-full"
+                        >
+                          <span className={`text-[12px] font-medium ${show.rating ? 'text-[#f0ede8]' : 'text-[#5a5650]'}`}>{show.rating || '—'}</span>
+                          {show.rating && <span className="text-[10px] text-[#5a5650]">/10</span>}
+                        </button>
+                        {openRating === show._id && (
+                          <div onClick={(e) => e.stopPropagation()} className="absolute top-full left-0 mt-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl" style={{ zIndex: 50, minWidth: '80px' }}>
+                            {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => (
+                              <button key={n} onClick={(e) => { e.stopPropagation(); handleRating(show.showId, n) }} className={`w-full text-left px-3 py-2 text-[12px] transition-all cursor-pointer ${show.rating === n ? 'text-white bg-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'}`}>{n}</button>
+                            ))}
+                            {show.rating && (
+                              <button onClick={(e) => { e.stopPropagation(); handleRating(show.showId, 0) }} className="w-full text-left px-3 py-2 text-[11px] text-[#5a5650] hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer border-t border-white/5">Clear</button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Remove */}
+                      <div className="flex justify-center">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDelete(show._id) }}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-[#5a5650] hover:text-red-400 hover:bg-red-400/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Mobile / tablet cards (below lg) ─────────────────── */}
+            <div className="flex flex-col gap-3 lg:hidden">
               {filteredShows.map((show) => (
                 <div
                   key={show._id}
-                  className="bg-[#1a1815] border border-white/7 rounded-xl hover:border-white/15 transition-all group"
+                  className="bg-[#1a1815] border border-white/7 rounded-xl"
                 >
-                  <div
-                    className="grid items-center gap-4 px-4 py-3"
-                    style={{ gridTemplateColumns: '56px 1fr 180px 160px 100px 32px' }}
-                  >
-
+                  <div className="flex">
                     {/* Poster */}
                     <div
-                      onClick={() => window.location.href = `/show/${show.showId}`}
-                      className="w-14 h-20 rounded-lg overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition-all"
-                    >
+  onClick={() => window.location.href = `/show/${show.showId}`}
+  className="w-20 shrink-0 cursor-pointer rounded-l-xl overflow-hidden"
+>
                       {show.image ? (
-                        <img
-                          src={proxyImage(show.image)}
-                          alt={show.showName}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={proxyImage(show.image)} alt={show.showName} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-white/5 flex items-center justify-center text-[#5a5650] text-[9px]">
-                          No img
-                        </div>
+                        <div className="w-full h-full bg-white/5 flex items-center justify-center text-[#5a5650] text-[9px]">No img</div>
                       )}
                     </div>
 
-                    {/* Title + genres */}
-                    <div
-                      onClick={() => window.location.href = `/show/${show.showId}`}
-                      className="min-w-0 cursor-pointer"
-                    >
-                      <div className="text-[13px] font-medium text-[#f0ede8] truncate mb-1 hover:text-[#D13924] transition-all">
-                        {show.showName}
-                      </div>
-                      <div className="text-[11px] text-[#5a5650] truncate">
-                        {show.genres.slice(0, 2).join(' · ') || 'Anime'}
-                      </div>
-                    </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 p-3 flex flex-col gap-2">
 
-                    {/* Status dropdown */}
-                    <div className="relative" style={{ zIndex: openDropdown === show._id ? 30 : 1 }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setOpenDropdown(openDropdown === show._id ? null : show._id)
-                          setOpenRating(null)
-                        }}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-[12px] text-[#f0ede8] hover:bg-white/10 transition-all cursor-pointer"
-                      >
-                        <span>{statusLabels[show.status]}</span>
-                        <span className="text-[#5a5650] ml-2 text-[10px]">▾</span>
-                      </button>
-
-                      {openDropdown === show._id && (
+                      {/* Title row */}
+                      <div className="flex items-start justify-between gap-2">
                         <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute top-full left-0 right-0 mt-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl"
-                          style={{ zIndex: 50 }}
+                          onClick={() => window.location.href = `/show/${show.showId}`}
+                          className="min-w-0 cursor-pointer"
                         >
-                          {tabs.map((tab) => (
-                            <button
-                              key={tab.value}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleStatusChange(show.showId, tab.value, show.totalEpisodes)
-                              }}
-                              className={`w-full text-left px-3 py-2.5 text-[12px] transition-all cursor-pointer ${
-                                show.status === tab.value
-                                  ? 'text-white bg-[#D13924]'
-                                  : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'
-                              }`}
-                            >
-                              {tab.label}
-                            </button>
-                          ))}
+                          <div className="text-[13px] font-medium text-[#f0ede8] truncate">{show.showName}</div>
+                          <div className="text-[11px] text-[#5a5650] truncate">{show.genres.slice(0, 2).join(' · ') || 'Anime'}</div>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Progress */}
-                    <div>
-                      {(show.status === 'watching' || show.status === 'completed') ? (
-                    <div className="flex items-center gap-2 justify-center">
-                          {show.status === 'watching' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEpisodeChange(show.showId, -1, show.currentEpisode, show.totalEpisodes, show.airingEpisode)
-                              }}
-                              className="text-[#5a5650] hover:text-[#f0ede8] transition-all cursor-pointer text-[16px] leading-none w-5 text-center"
-                            >
-                              −
-                            </button>
-                          )}
-                          <span className="text-[12px] text-[#f0ede8] tabular-nums">
-                            {show.currentEpisode}
-                            <span className="text-[#5a5650]"> / {show.airingEpisode ?? show.totalEpisodes ?? '?'}</span>
-                          </span>
-                          {show.status === 'watching' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEpisodeChange(show.showId, 1, show.currentEpisode, show.totalEpisodes, show.airingEpisode)
-                              }}
-                              className="text-[#5a5650] hover:text-[#f0ede8] transition-all cursor-pointer text-[16px] leading-none w-5 text-center"
-                            >
-                              +
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-[12px] text-[#5a5650] text-center w-full block">—</span>
-                      )}
-                    </div>
-
-                    {/* Score */}
-                    <div className="relative" style={{ zIndex: openRating === show._id ? 30 : 1 }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setOpenRating(openRating === show._id ? null : show._id)
-                          setOpenDropdown(null)
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer w-full"
-                      >
-                        <span className={`text-[12px] font-medium ${show.rating ? 'text-[#f0ede8]' : 'text-[#5a5650]'}`}>
-                          {show.rating ? show.rating : '—'}
-                        </span>
-                        {show.rating && <span className="text-[10px] text-[#5a5650]">/10</span>}
-                      </button>
-
-                      {openRating === show._id && (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute top-full left-0 mt-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl"
-                          style={{ zIndex: 50, minWidth: '80px' }}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDelete(show._id) }}
+                          className="text-[#5a5650] hover:text-red-400 transition-all cursor-pointer shrink-0 text-[12px] mt-0.5"
                         >
-                          {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => (
-                            <button
-                              key={n}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRating(show.showId, n)
-                              }}
-                              className={`w-full text-left px-3 py-2 text-[12px] transition-all cursor-pointer ${
-                                show.rating === n
-                                  ? 'text-white bg-[#D13924]'
-                                  : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'
-                              }`}
-                            >
-                              {n}
-                            </button>
-                          ))}
-                          {show.rating && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRating(show.showId, 0)
-                              }}
-                              className="w-full text-left px-3 py-2 text-[11px] text-[#5a5650] hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer border-t border-white/5"
-                            >
-                              Clear
-                            </button>
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* Status dropdown */}
+                      <div className="relative" style={{ zIndex: openDropdown === show._id ? 30 : 1 }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === show._id ? null : show._id); setOpenRating(null) }}
+                          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-[#f0ede8] hover:bg-white/10 transition-all cursor-pointer"
+                        >
+                          <span>{statusLabels[show.status]}</span>
+                          <span className="text-[#5a5650] text-[10px]">▾</span>
+                        </button>
+                        {openDropdown === show._id && (
+                          <div onClick={(e) => e.stopPropagation()} className="absolute top-full left-0 right-0 mt-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl" style={{ zIndex: 50 }}>
+                            {tabs.map((tab) => (
+                              <button
+                                key={tab.value}
+                                onClick={(e) => { e.stopPropagation(); handleStatusChange(show.showId, tab.value, show.totalEpisodes) }}
+                                className={`w-full text-left px-3 py-2.5 text-[12px] transition-all cursor-pointer ${show.status === tab.value ? 'text-white bg-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'}`}
+                              >
+                                {tab.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Progress + Score row */}
+                      <div className="flex items-center gap-2">
+
+                        {/* Progress */}
+                        {(show.status === 'watching' || show.status === 'completed') ? (
+                          <div className="flex items-center gap-1.5 flex-1">
+                            {show.status === 'watching' && (
+                              <button onClick={(e) => { e.stopPropagation(); handleEpisodeChange(show.showId, -1, show.currentEpisode, show.totalEpisodes, show.airingEpisode) }} className="text-[#5a5650] hover:text-[#f0ede8] transition-all cursor-pointer text-[14px] leading-none">−</button>
+                            )}
+                            <span className="text-[11px] text-[#f0ede8] tabular-nums">
+                              {show.currentEpisode}<span className="text-[#5a5650]">/{show.airingEpisode ?? show.totalEpisodes ?? '?'}</span>
+                            </span>
+                            {show.status === 'watching' && (
+                              <button onClick={(e) => { e.stopPropagation(); handleEpisodeChange(show.showId, 1, show.currentEpisode, show.totalEpisodes, show.airingEpisode) }} className="text-[#5a5650] hover:text-[#f0ede8] transition-all cursor-pointer text-[14px] leading-none">+</button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex-1" />
+                        )}
+
+                        {/* Score */}
+                        <div className="relative" style={{ zIndex: openRating === show._id ? 30 : 1 }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setOpenRating(openRating === show._id ? null : show._id); setOpenDropdown(null) }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+                          >
+                            <span className={`text-[11px] font-medium ${show.rating ? 'text-[#f0ede8]' : 'text-[#5a5650]'}`}>{show.rating || '—'}</span>
+                            {show.rating && <span className="text-[10px] text-[#5a5650]">/10</span>}
+                          </button>
+                          {openRating === show._id && (
+                            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl" style={{ zIndex: 50, minWidth: '80px' }}>
+                              {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => (
+                                <button key={n} onClick={(e) => { e.stopPropagation(); handleRating(show.showId, n) }} className={`w-full text-left px-3 py-2 text-[12px] transition-all cursor-pointer ${show.rating === n ? 'text-white bg-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'}`}>{n}</button>
+                              ))}
+                              {show.rating && (
+                                <button onClick={(e) => { e.stopPropagation(); handleRating(show.showId, 0) }} className="w-full text-left px-3 py-2 text-[11px] text-[#5a5650] hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer border-t border-white/5">Clear</button>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Remove */}
-                    <div className="flex justify-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setConfirmDelete(show._id)
-                        }}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[#5a5650] hover:text-red-400 hover:bg-red-400/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                      >
-                        ✕
-                      </button>
+                      </div>
                     </div>
-
                   </div>
                 </div>
               ))}
