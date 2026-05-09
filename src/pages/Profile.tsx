@@ -285,40 +285,20 @@ function Profile() {
             {actionButton()}
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mt-5 md:mt-6 pt-5 md:pt-6 border-t border-white/5">
-            <div className="text-center">
-              <div className="text-base md:text-lg font-medium text-[#f0ede8]">{profile.stats.showsWatched}</div>
-              <div className="text-[9px] md:text-[10px] text-[#9a9590] mt-0.5">Shows</div>
-            </div>
-            <div className="text-center">
-              <div className="text-base md:text-lg font-medium text-[#f0ede8]">{profile.stats.episodesWatched.toLocaleString()}</div>
-              <div className="text-[9px] md:text-[10px] text-[#9a9590] mt-0.5">Episodes</div>
-            </div>
-            <div className="text-center">
-              <div className="text-base md:text-lg font-medium text-[#f0ede8]">{profile.stats.daysWatched}</div>
-              <div className="text-[9px] md:text-[10px] text-[#9a9590] mt-0.5">Days</div>
-            </div>
-            <div className="text-center hidden md:block">
-              <div className="text-lg font-medium text-[#f0ede8]">{profile.stats.discussionsStarted}</div>
-              <div className="text-[10px] text-[#9a9590] mt-0.5">Discussions</div>
-            </div>
-            <div className="text-center hidden md:block">
-              <div className="text-lg font-medium text-[#f0ede8]">{profile.user.friends?.length || 0}</div>
-              <div className="text-[10px] text-[#9a9590] mt-0.5">Friends</div>
-            </div>
-          </div>
-
-          {/* Mobile extra stats */}
-          <div className="grid grid-cols-2 gap-3 mt-3 md:hidden">
-            <div className="text-center">
-              <div className="text-base font-medium text-[#f0ede8]">{profile.stats.discussionsStarted}</div>
-              <div className="text-[9px] text-[#9a9590] mt-0.5">Discussions</div>
-            </div>
-            <div className="text-center">
-              <div className="text-base font-medium text-[#f0ede8]">{profile.user.friends?.length || 0}</div>
-              <div className="text-[9px] text-[#9a9590] mt-0.5">Friends</div>
-            </div>
+        {/* Stats — single row all screen sizes */}
+          <div className="grid grid-cols-5 gap-2 mt-5 md:mt-6 pt-5 md:pt-6 border-t border-white/5">
+            {[
+              { label: 'Shows', value: profile.stats.showsWatched },
+              { label: 'Episodes', value: profile.stats.episodesWatched.toLocaleString() },
+              { label: 'Days', value: profile.stats.daysWatched },
+              { label: 'Threads', value: profile.stats.discussionsStarted },
+              { label: 'Friends', value: profile.user.friends?.length || 0 },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-sm md:text-lg font-medium text-[#f0ede8]">{stat.value}</div>
+                <div className="text-[8px] md:text-[10px] text-[#9a9590] mt-0.5">{stat.label}</div>
+              </div>
+            ))}
           </div>
 
         </div>
@@ -470,14 +450,12 @@ function Profile() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border ${
+                     <span className={`text-[9px] px-2 py-0.5 rounded-full border ${
                         thread.threadType === 'episode'
                           ? 'bg-[#D13924]/10 text-[#D13924] border-[#D13924]/25'
-                          : thread.threadType === 'season'
-                          ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
                           : 'bg-white/5 text-[#9a9590] border-white/10'
                       }`}>
-                        {thread.threadType === 'episode' ? 'Episode' : thread.threadType === 'season' ? 'Season' : 'Show'}
+                        {thread.threadType === 'episode' ? 'Episode' : 'Show'}
                       </span>
                       <span className="text-[10px] text-[#5a5650]">{timeAgo(thread.createdAt)}</span>
                     </div>

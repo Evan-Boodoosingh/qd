@@ -65,7 +65,7 @@ function Login() {
           />
         </div>
 
-        <div className="bg-[#1a1815] border border-white/7 rounded-2xl p-10">
+        <div className="bg-[#1a1815] border border-white/7 rounded-2xl p-6 sm:p-10">
           <h1 className="text-xl font-medium text-[#f0ede8] mb-1 text-center">Welcome back</h1>
           <p className="text-[13px] text-[#9a9590] mb-8 text-center">Sign in to your Queued account</p>
 

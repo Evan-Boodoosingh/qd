@@ -186,7 +186,7 @@ function Discussions() {
                   <div className="text-[12px] text-[#D13924] font-medium truncate">
                     {thread.show}
                     {thread.threadType === 'episode' && ` — S${thread.season} Ep ${thread.episode}`}
-                    {thread.threadType === 'season' && ` — Season ${thread.season}`}
+                 
                     {' · '}{thread.threadTitle}
                   </div>
                 </div>

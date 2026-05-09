@@ -284,7 +284,7 @@ const handleReply = async () => {
               )}
             </div>
 
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               <button
                 onClick={() => { if (isLoggedIn) handleLike(reply._id) }}
                 className={`flex items-center gap-1 text-[11px] transition-all ${
@@ -341,7 +341,7 @@ const handleReply = async () => {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* Thread header */}
         <div className="mb-6">
@@ -357,8 +357,6 @@ const handleReply = async () => {
             }`}>
               {thread.threadType === 'episode'
                 ? `S${thread.season} Ep ${thread.episode}`
-                : thread.threadType === 'season'
-                ? `Season ${thread.season}`
                 : 'Show'}
             </span>
             {thread.hasSpoiler && (
@@ -368,9 +366,9 @@ const handleReply = async () => {
             )}
           </div>
 
-          <h1 className="text-2xl font-medium text-[#f0ede8] mb-3">{thread.threadTitle}</h1>
+          <h1 className="text-xl sm:text-2xl font-medium text-[#f0ede8] mb-3 leading-tight">{thread.threadTitle}</h1>
 
-          <div className="flex items-center gap-3 text-[11px] text-[#9a9590]">
+          <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-[#9a9590] flex-wrap">
             <div className="flex items-center gap-2">
               <div
                 className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-semibold"
@@ -460,7 +458,7 @@ const handleReply = async () => {
         </div>
 
         {/* Replies */}
-        <div className="flex flex-col gap-5 mb-24">
+        <div className="flex flex-col gap-4 sm:gap-5 mb-32 sm:mb-24">
           {sortedReplies.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-[#9a9590] text-sm">No replies yet</p>
@@ -473,7 +471,7 @@ const handleReply = async () => {
 
         {/* Reply box */}
         {isLoggedIn ? (
-          <div className="fixed bottom-0 left-0 right-0 bg-[#0f0e0d]/95 backdrop-blur-md border-t border-white/8 px-6 py-4">
+          <div className="fixed bottom-0 left-0 right-0 bg-[#0f0e0d]/95 backdrop-blur-md border-t border-white/8 px-4 sm:px-6 py-3 sm:py-4">
             <div className="max-w-3xl mx-auto">
               <div className="flex items-start gap-3">
                 <div
@@ -518,9 +516,9 @@ const handleReply = async () => {
             </div>
           </div>
         ) : (
-          <div className="fixed bottom-0 left-0 right-0 bg-[#0f0e0d]/95 backdrop-blur-md border-t border-white/8 px-6 py-4">
-            <div className="max-w-3xl mx-auto flex items-center justify-between">
-              <p className="text-[13px] text-[#9a9590]">Join the conversation</p>
+        <div className="fixed bottom-0 left-0 right-0 bg-[#0f0e0d]/95 backdrop-blur-md border-t border-white/8 px-4 sm:px-6 py-3 sm:py-4">
+            <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+              <p className="text-[12px] sm:text-[13px] text-[#9a9590] hidden sm:block">Join the conversation</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => window.location.href = '/login'}

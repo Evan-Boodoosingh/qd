@@ -132,7 +132,6 @@ function Community() {
             {([
               { label: 'All', value: 'all' },
               { label: 'Episode', value: 'episode' },
-              { label: 'Season', value: 'season' },
               { label: 'Show', value: 'show' },
             ] as { label: string; value: ThreadType | 'all' }[]).map((t) => (
               <button

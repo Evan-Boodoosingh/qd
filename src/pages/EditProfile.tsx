@@ -120,7 +120,7 @@ const handleSave = async () => {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         <div className="flex items-center gap-4 mb-8">
           <button
@@ -248,7 +248,7 @@ const handleSave = async () => {
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between gap-3 pt-2">
             <button
               onClick={() => window.location.href = `/profile/${parsedUser?.username}`}
               className="text-[13px] text-[#9a9590] hover:text-[#f0ede8] cursor-pointer transition-all"
@@ -258,7 +258,7 @@ const handleSave = async () => {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="text-[13px] text-white font-medium px-6 py-2.5 rounded-full cursor-pointer hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-[13px] text-white font-medium px-5 sm:px-6 py-2.5 rounded-full cursor-pointer hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#D13924' }}
             >
               {saving ? 'Saving...' : 'Save changes'}

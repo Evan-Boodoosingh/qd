@@ -33,8 +33,9 @@ function NewThread() {
   const [threadType, setThreadType] = useState<'episode' | 'season' | 'show'>(
     (searchParams.get('threadType') as 'episode' | 'season' | 'show') || 'show'
   )
-  const [seasonNumber, setSeasonNumber] = useState('')
+  // const [seasonNumber, setSeasonNumber] = useState('')
   const [episodeNumber, setEpisodeNumber] = useState(searchParams.get('episode') || '')
+ const [seasonNumber] = useState('')
 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -142,7 +143,7 @@ function NewThread() {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
 
-      <div className="max-w-xl mx-auto px-6 py-10">
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         <div className="mb-8">
           <h1 className="text-xl font-medium text-[#f0ede8] mb-1">Start a thread</h1>
@@ -265,39 +266,26 @@ function NewThread() {
                   <p className="text-[11px] text-[#9a9590] ml-7 mb-3">Discuss a specific episode</p>
 
                   {threadType === 'episode' && (
-                    <div className="flex gap-3 ml-7" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex-1">
-                        <label className="text-[11px] text-[#9a9590] mb-1.5 block">Season # <span className="text-[#5a5650]">(optional)</span></label>
-                        <input
-                          autoFocus
-                          type="number"
-                          min={1}
-                          value={seasonNumber}
-                          onChange={(e) => setSeasonNumber(e.target.value)}
-                          placeholder="1"
-                          className="w-full bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-2 text-[13px] text-[#f0ede8] placeholder-[#5a5650] focus:outline-none focus:border-[#D13924] transition-all"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="text-[11px] text-[#9a9590] mb-1.5 block">
-                          Episode #{selectedShowEpisodes && <span className="text-[#5a5650] ml-1">max {selectedShowEpisodes}</span>}
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          max={selectedShowEpisodes || undefined}
-                          value={episodeNumber}
-                          onChange={(e) => setEpisodeNumber(e.target.value)}
-                          placeholder="12"
-                          className="w-full bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-2 text-[13px] text-[#f0ede8] placeholder-[#5a5650] focus:outline-none focus:border-[#D13924] transition-all"
-                        />
-                      </div>
+                    <div className="ml-7" onClick={(e) => e.stopPropagation()}>
+                      <label className="text-[11px] text-[#9a9590] mb-1.5 block">
+                        Episode #{selectedShowEpisodes && <span className="text-[#5a5650] ml-1">max {selectedShowEpisodes}</span>}
+                      </label>
+                      <input
+                        autoFocus
+                        type="number"
+                        min={1}
+                        max={selectedShowEpisodes || undefined}
+                        value={episodeNumber}
+                        onChange={(e) => setEpisodeNumber(e.target.value)}
+                        placeholder="12"
+                        className="w-full bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-2 text-[13px] text-[#f0ede8] placeholder-[#5a5650] focus:outline-none focus:border-[#D13924] transition-all"
+                      />
                     </div>
                   )}
                 </div>
 
                 {/* Season */}
-                <div
+                {/* <div
                   onClick={() => setThreadType('season')}
                   className={`rounded-xl border p-4 cursor-pointer transition-all ${
                     threadType === 'season' ? 'border-[#D13924] bg-[#D13924]/05' : 'border-white/7 hover:border-white/20'
@@ -314,20 +302,11 @@ function NewThread() {
                   <p className="text-[11px] text-[#9a9590] ml-7 mb-3">Discuss an entire season</p>
 
                   {threadType === 'season' && (
-                    <div className="ml-7" onClick={(e) => e.stopPropagation()}>
-                      <label className="text-[11px] text-[#9a9590] mb-1.5 block">Season # <span className="text-[#5a5650]">(optional)</span></label>
-                      <input
-                        autoFocus
-                        type="number"
-                        min={1}
-                        value={seasonNumber}
-                        onChange={(e) => setSeasonNumber(e.target.value)}
-                        placeholder="1"
-                        className="w-full bg-[#0f0e0d] border border-white/10 rounded-lg px-3 py-2 text-[13px] text-[#f0ede8] placeholder-[#5a5650] focus:outline-none focus:border-[#D13924] transition-all"
-                      />
+                    <div className="ml-7">
+                      <p className="text-[11px] text-[#9a9590]">General discussion about this season</p>
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 {/* Show */}
                 <div
