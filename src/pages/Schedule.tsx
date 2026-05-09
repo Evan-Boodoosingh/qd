@@ -41,7 +41,6 @@ const getTodayName = (): string =>
 function Schedule() {
   const [shows, setShows] = useState<Show[]>([])
   const [loading, setLoading] = useState(true)
-  const [showOngoing, setShowOngoing] = useState(true)
   const [selectedDay, setSelectedDay] = useState(getTodayName())
   const [activeTab, setActiveTab] = useState<ScheduleTab>('fullSchedule')
   const [watchedIds, setWatchedIds] = useState<number[]>([])
@@ -99,22 +98,15 @@ function Schedule() {
     }
   }
 
-  const baseShows = activeTab === 'mySchedule'
+  const filteredShows = (activeTab === 'mySchedule'
     ? shows.filter((s) => watchedIds.includes(s.id))
     : shows
+  ).sort((a, b) => getLocalMinutes(a) - getLocalMinutes(b))
 
-  const filteredShows = baseShows
-    .filter((show) => showOngoing ? true : !show.isOngoing)
-    .sort((a, b) => getLocalMinutes(a) - getLocalMinutes(b))
-
-  const showsForDay = filteredShows
-    .filter((show) => show.day === selectedDay)
-
+  const showsForDay = filteredShows.filter((show) => show.day === selectedDay)
   const today = getTodayName()
 
-  const bottomGridTitle = activeTab === 'mySchedule'
-    ? 'On my list'
-    : showOngoing ? 'All airing shows' : 'Seasonal anime'
+  const bottomGridTitle = activeTab === 'mySchedule' ? 'On my list' : 'All airing shows'
 
   if (loading) {
     return (
@@ -131,26 +123,12 @@ function Schedule() {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
 
-      <div className="px-6 py-8 max-w-6xl mx-auto">
+      <div className="px-4 md:px-6 py-6 md:py-8 max-w-6xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-medium text-[#f0ede8] mb-1">Schedule</h1>
-            <p className="text-[13px] text-[#9a9590]">Current anime season · All airing shows including long-runners</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowOngoing(!showOngoing)}
-              className={`px-4 py-1.5 rounded-lg text-[12px] cursor-pointer transition-all border ${
-                !showOngoing
-                  ? 'border-[#7F77DD] text-[#7F77DD] bg-[#7F77DD]/10'
-                  : 'border-white/7 bg-[#1a1815] text-[#9a9590] hover:text-[#f0ede8]'
-              }`}
-            >
-              {showOngoing ? 'Seasonal only' : 'All shows'}
-            </button>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-xl font-medium text-[#f0ede8] mb-1">Schedule</h1>
+          <p className="text-[13px] text-[#9a9590]">Current season · All airing shows including long-runners</p>
         </div>
 
         {/* Tabs */}
@@ -158,7 +136,7 @@ function Schedule() {
           {isLoggedIn && (
             <button
               onClick={() => setActiveTab('mySchedule')}
-              className={`px-5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${
+              className={`px-4 md:px-5 py-2 rounded-lg text-[12px] md:text-sm font-medium cursor-pointer transition-all ${
                 activeTab === 'mySchedule' ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
               }`}
               style={activeTab === 'mySchedule' ? { backgroundColor: '#D13924' } : {}}
@@ -168,7 +146,7 @@ function Schedule() {
           )}
           <button
             onClick={() => setActiveTab('fullSchedule')}
-            className={`px-5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${
+            className={`px-4 md:px-5 py-2 rounded-lg text-[12px] md:text-sm font-medium cursor-pointer transition-all ${
               activeTab === 'fullSchedule' ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
             }`}
             style={activeTab === 'fullSchedule' ? { backgroundColor: '#D13924' } : {}}
@@ -177,7 +155,7 @@ function Schedule() {
           </button>
         </div>
 
-        {/* Day selector */}
+      {/* Day selector */}
         <div className="grid grid-cols-7 gap-2 mb-8">
           {days.map((day) => {
             const hasShows = filteredShows.some((s) => s.day === day)
@@ -220,26 +198,32 @@ function Schedule() {
           {showsForDay.length === 0 ? (
             <div className="text-center py-12 bg-[#1a1815] border border-white/7 rounded-xl">
               <p className="text-[#9a9590] text-sm">Nothing airing on {selectedDay}</p>
-              <p className="text-[#5a5650] text-[12px] mt-1">Try a different day or toggle to show all shows</p>
+              <p className="text-[#5a5650] text-[12px] mt-1">
+                {activeTab === 'mySchedule'
+                  ? 'None of your shows air on this day'
+                  : 'Try selecting a different day'}
+              </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 md:gap-3">
               {showsForDay.map((show) => (
                 <div
                   key={show.id}
                   onClick={() => window.location.href = `/show/${show.id}`}
-                  className="bg-[#1a1815] border border-white/7 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
+                  className="bg-[#1a1815] border border-white/7 rounded-xl p-3 md:p-4 flex items-center gap-3 md:gap-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
                 >
-                  <div className="text-center shrink-0 w-20">
-                    <div className="text-[12px] font-medium text-[#f0ede8]">
+                  {/* Time */}
+                  <div className="text-center shrink-0 w-14 md:w-20">
+                    <div className="text-[11px] md:text-[12px] font-medium text-[#f0ede8]">
                       {getLocalTime(show) ?? 'TBA'}
                     </div>
-                    <div className="text-[10px] text-[#5a5650]">Local time</div>
+                    <div className="text-[9px] md:text-[10px] text-[#5a5650]">Local</div>
                   </div>
 
-                  <div className="w-px h-10 bg-white/10 shrink-0" />
+                  <div className="w-px h-8 md:h-10 bg-white/10 shrink-0" />
 
-                  <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0">
+                  {/* Poster */}
+                  <div className="w-8 h-11 md:w-10 md:h-14 rounded-lg overflow-hidden shrink-0">
                     <img
                       src={proxyImage(show.image)}
                       alt={show.title}
@@ -247,36 +231,41 @@ function Schedule() {
                     />
                   </div>
 
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="text-[13px] font-medium text-[#f0ede8] truncate">{show.title}</div>
+                    <div className="flex items-center gap-2 mb-0.5 md:mb-1">
+                      <div className="text-[12px] md:text-[13px] font-medium text-[#f0ede8] truncate">{show.title}</div>
                       {show.isOngoing && (
-                        <span className="text-[9px] text-[#7F77DD] bg-[#7F77DD]/10 border border-[#7F77DD]/25 px-2 py-0.5 rounded-full shrink-0">
+                        <span className="text-[9px] text-[#7F77DD] bg-[#7F77DD]/10 border border-[#7F77DD]/25 px-2 py-0.5 rounded-full shrink-0 hidden sm:inline">
                           Ongoing
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-[#9a9590]">{show.genres.slice(0, 2).join(' · ')}</span>
-                      <span className="text-[11px] text-[#5a5650]">·</span>
-                      <span className="text-[11px] text-[#9a9590]">{show.studio}</span>
+                      <span className="text-[10px] md:text-[11px] text-[#9a9590] truncate">
+                        {show.genres.slice(0, 2).join(' · ')}
+                      </span>
+                      <span className="text-[10px] text-[#5a5650] hidden sm:inline">·</span>
+                      <span className="text-[10px] md:text-[11px] text-[#9a9590] hidden sm:inline truncate">{show.studio}</span>
                     </div>
                   </div>
 
-                  <div className="shrink-0">
+                  {/* Score */}
+                  <div className="shrink-0 hidden sm:block">
                     <span className="text-[10px] text-[#9a9590]">♥ {show.score}</span>
                   </div>
 
+                  {/* Add button */}
                   {isLoggedIn && (
                     <button
-                      className="text-[11px] font-medium px-3 py-1.5 rounded-full shrink-0 cursor-pointer hover:opacity-90 transition-all"
+                      className="text-[10px] md:text-[11px] font-medium px-2.5 md:px-3 py-1.5 rounded-full shrink-0 cursor-pointer hover:opacity-90 transition-all"
                       style={{
                         backgroundColor: watchedIds.includes(show.id) ? 'rgba(209,57,36,0.2)' : '#D13924',
                         color: watchedIds.includes(show.id) ? '#D13924' : '#fff'
                       }}
                       onClick={(e) => handleAddToList(e, show)}
                     >
-                      {watchedIds.includes(show.id) ? '✓ On list' : '+ List'}
+                      {watchedIds.includes(show.id) ? '✓' : '+'}
                     </button>
                   )}
                 </div>
@@ -285,8 +274,8 @@ function Schedule() {
           )}
         </div>
 
-        {/* Weekly grid */}
-        <div className="mb-10">
+        {/* Weekly grid — desktop and tablet only */}
+        <div className="hidden md:block mb-10">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-sm font-medium text-[#f0ede8]">This week at a glance</h2>
             <div className="flex-1 h-px bg-white/5" />
@@ -294,7 +283,7 @@ function Schedule() {
           <WeeklyGrid shows={filteredShows} />
         </div>
 
-        {/* Bottom grid */}
+        {/* All airing shows */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-sm font-medium text-[#f0ede8]">{bottomGridTitle}</h2>
@@ -302,7 +291,63 @@ function Schedule() {
             <span className="text-[11px] text-[#9a9590]">{filteredShows.length} shows</span>
           </div>
 
-          <div className="grid grid-cols-6 gap-4">
+          {/* Mobile — horizontal card list */}
+          <div className="flex flex-col gap-2 md:hidden">
+            {filteredShows.map((show) => (
+              <div
+                key={show.id}
+                onClick={() => window.location.href = `/show/${show.id}`}
+                className="bg-[#1a1815] border border-white/7 rounded-xl overflow-hidden flex cursor-pointer hover:border-[#D13924]/30 transition-all"
+              >
+                {/* Poster */}
+                <div className="w-16 shrink-0">
+                  <img
+                    src={proxyImage(show.image)}
+                    alt={show.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
+                  <div>
+                    <div className="text-[12px] font-medium text-[#f0ede8] truncate mb-0.5">{show.title}</div>
+                    <div className="text-[10px] text-[#9a9590] truncate">{show.genres.slice(0, 2).join(' · ')}</div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[10px] text-[#9a9590]">{show.day}</span>
+                    <div className="flex items-center gap-2">
+                      {show.isOngoing && (
+                        <span className="text-[9px] text-[#7F77DD] bg-[#7F77DD]/10 border border-[#7F77DD]/25 px-1.5 py-0.5 rounded-full">
+                          Ongoing
+                        </span>
+                      )}
+                      <span className="text-[10px] text-[#D13924]">♥ {show.score}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add button */}
+                {isLoggedIn && (
+                  <div className="flex items-center pr-3">
+                    <button
+                      onClick={(e) => handleAddToList(e, show)}
+                      className="text-[10px] font-medium px-2.5 py-1.5 rounded-full shrink-0 cursor-pointer hover:opacity-90 transition-all"
+                      style={{
+                        backgroundColor: watchedIds.includes(show.id) ? 'rgba(209,57,36,0.2)' : '#D13924',
+                        color: watchedIds.includes(show.id) ? '#D13924' : '#fff'
+                      }}
+                    >
+                      {watchedIds.includes(show.id) ? '✓' : '+'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Tablet and desktop — grid */}
+          <div className="hidden md:grid md:grid-cols-5 lg:grid-cols-6 gap-4">
             {filteredShows.map((show) => (
               <div
                 key={show.id}
