@@ -85,37 +85,39 @@ function Community() {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
 
-      <div className="px-6 py-8 max-w-6xl mx-auto">
+      <div className="px-4 md:px-6 py-6 md:py-8 max-w-6xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5 md:mb-6">
           <div>
             <h1 className="text-xl font-medium text-[#f0ede8] mb-1">Community</h1>
-            <p className="text-[13px] text-[#9a9590]">What the anime community is talking about right now</p>
+            <p className="text-[13px] text-[#9a9590]">What the anime community is talking about</p>
           </div>
           {isLoggedIn && (
             <button
               onClick={() => window.location.href = '/thread/new'}
-              className="text-[13px] text-white font-medium px-5 py-2 rounded-full cursor-pointer hover:opacity-90 transition-all"
+              className="text-[12px] md:text-[13px] text-white font-medium px-4 md:px-5 py-2 rounded-full cursor-pointer hover:opacity-90 transition-all shrink-0"
               style={{ backgroundColor: '#D13924' }}
             >
-              + Start a thread
+              + New thread
             </button>
           )}
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
+        {/* Filters — stack on mobile */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-5 md:mb-6">
+
+          {/* Sort */}
+          <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1 w-full sm:w-auto">
             {([
-              { label: 'Most Active', value: 'mostActive' },
+              { label: 'Active', value: 'mostActive' },
               { label: 'Newest', value: 'newest' },
-              { label: 'Most Liked', value: 'mostLiked' },
+              { label: 'Liked', value: 'mostLiked' },
             ] as { label: string; value: SortType }[]).map((s) => (
               <button
                 key={s.value}
                 onClick={() => setSortBy(s.value)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] cursor-pointer transition-all ${
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[12px] cursor-pointer transition-all whitespace-nowrap ${
                   sortBy === s.value ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
                 }`}
                 style={sortBy === s.value ? { backgroundColor: '#D13924' } : {}}
@@ -125,7 +127,8 @@ function Community() {
             ))}
           </div>
 
-          <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1">
+          {/* Type filter */}
+          <div className="flex gap-1 bg-[#1a1815] border border-white/7 rounded-xl p-1 w-full sm:w-auto">
             {([
               { label: 'All', value: 'all' },
               { label: 'Episode', value: 'episode' },
@@ -135,7 +138,7 @@ function Community() {
               <button
                 key={t.value}
                 onClick={() => setThreadFilter(t.value)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] cursor-pointer transition-all ${
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[12px] cursor-pointer transition-all whitespace-nowrap ${
                   threadFilter === t.value ? 'text-white' : 'text-[#9a9590] hover:text-[#f0ede8]'
                 }`}
                 style={threadFilter === t.value ? { backgroundColor: '#D13924' } : {}}
@@ -144,6 +147,7 @@ function Community() {
               </button>
             ))}
           </div>
+
         </div>
 
         {/* Thread count */}
@@ -173,18 +177,19 @@ function Community() {
                 onClick={() => window.location.href = `/thread/${thread._id}`}
                 className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
               >
-                <div className="flex items-start gap-3 mb-3">
+                {/* Thread header */}
+                <div className="flex items-start gap-2 mb-3">
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] text-[#9a9590] mb-0.5">
+                    <div className="text-[11px] text-[#9a9590] mb-0.5 truncate">
                       {thread.threadType === 'episode' && `${thread.show} — S${thread.season} Ep ${thread.episode}`}
                       {thread.threadType === 'season' && `${thread.show} — Season ${thread.season}`}
                       {thread.threadType === 'show' && thread.show}
                     </div>
                     <div className="text-[13px] font-medium text-[#f0ede8] truncate">{thread.threadTitle}</div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     {spoiler && (
-                      <span className="text-[9px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 px-2 py-0.5 rounded-full">
+                      <span className="text-[9px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 px-2 py-0.5 rounded-full hidden sm:inline">
                         ⚠ Spoiler
                       </span>
                     )}
@@ -195,12 +200,13 @@ function Community() {
                         ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/25'
                         : 'bg-white/5 text-[#9a9590] border-white/10'
                     }`}>
-                      {thread.threadType === 'episode' ? 'Episode' : thread.threadType === 'season' ? 'Season' : 'Show'}
+                      {thread.threadType === 'episode' ? 'Ep' : thread.threadType === 'season' ? 'Season' : 'Show'}
                     </span>
                     <span className="text-[10px] text-[#5a5650]">{timeAgo(thread.createdAt)}</span>
                   </div>
                 </div>
 
+                {/* Post preview */}
                 <div className="relative mb-3">
                   <div className={`text-[12px] text-[#c8c4be] leading-relaxed bg-white/3 rounded-lg px-3 py-2.5 line-clamp-2 transition-all ${
                     spoiler && !revealed ? 'blur-sm select-none' : ''
@@ -222,53 +228,44 @@ function Community() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="text-[11px] text-[#9a9590]">
+                {/* Footer */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                    <span className="text-[11px] text-[#9a9590] shrink-0">
                       <span className="text-[#D13924]">{thread.replies.length}</span> replies
                     </span>
-                    <span className="text-[11px] text-[#9a9590]">
+                    <span className="text-[11px] text-[#9a9590] shrink-0">
                       <span className="text-[#D13924]">{thread.likes.length}</span> likes
                     </span>
-                    <span className="text-[11px] text-[#9a9590]">by @{thread.username}</span>
+                    <span className="text-[11px] text-[#9a9590] truncate hidden sm:block">
+                      by @{thread.username}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {isLoggedIn && !alreadyReported && !thread.hasSpoiler && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           setReportedSpoilers([...reportedSpoilers, thread._id])
                         }}
-                        className="text-[10px] text-yellow-400/70 hover:text-yellow-400 cursor-pointer transition-all px-2 py-1 rounded border border-transparent hover:border-yellow-400/20"
+                        className="text-[10px] text-yellow-400/70 hover:text-yellow-400 cursor-pointer transition-all px-2 py-1 rounded border border-transparent hover:border-yellow-400/20 hidden sm:block"
                       >
-                        ⚠ Flag spoiler
+                        ⚠ Flag
                       </button>
                     )}
                     {alreadyReported && (
-                      <span className="text-[10px] text-[#5a5650]">Flagged</span>
+                      <span className="text-[10px] text-[#5a5650] hidden sm:inline">Flagged</span>
                     )}
-                    {isLoggedIn ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          window.location.href = `/thread/${thread._id}`
-                        }}
-                        className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
-                      >
-                        Join thread ›
-                      </button>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          window.location.href = '/register'
-                        }}
-                        className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
-                      >
-                        Sign up to reply ›
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.location.href = isLoggedIn ? `/thread/${thread._id}` : '/register'
+                      }}
+                      className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-2.5 sm:px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer whitespace-nowrap"
+                    >
+                      {isLoggedIn ? 'Join ›' : 'Sign up ›'}
+                    </button>
                   </div>
                 </div>
               </div>
