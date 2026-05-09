@@ -31,7 +31,6 @@ const normalizeDayName = (day: string): string => {
 function Calendar() {
   const [shows, setShows] = useState<Show[]>([])
   const [loading, setLoading] = useState(true)
-  const [showOngoing, setShowOngoing] = useState(true)
 
   useEffect(() => {
     fetchCurrentSeason()
@@ -52,8 +51,6 @@ function Calendar() {
       .catch(() => setLoading(false))
   }, [])
 
-  const filteredShows = showOngoing ? shows : shows.filter(s => !s.isOngoing)
-
   if (loading) {
     return (
       <div className="border-t border-white/5 py-10">
@@ -73,24 +70,12 @@ function Calendar() {
             <h2 className="text-sm font-medium text-[#f0ede8]">This week's schedule</h2>
             <p className="text-[11px] text-[#9a9590] mt-0.5">Current season · Updated daily</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowOngoing(!showOngoing)}
-              className={`text-[11px] px-3 py-1 rounded-full cursor-pointer transition-all border ${
-                !showOngoing
-                  ? 'border-[#7F77DD] text-[#7F77DD] bg-[#7F77DD]/10'
-                  : 'border-white/7 text-[#9a9590] hover:text-[#f0ede8]'
-              }`}
-            >
-              {showOngoing ? 'Seasonal only' : 'All shows'}
-            </button>
-            <span className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/20 px-3 py-1 rounded-full">
-              Airing now
-            </span>
-          </div>
+          <span className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/20 px-3 py-1 rounded-full">
+            Airing now
+          </span>
         </div>
 
-        <WeeklyGrid shows={filteredShows} />
+        <WeeklyGrid shows={shows} />
 
         <div className="mt-4 text-center">
           <span
