@@ -69,20 +69,18 @@ function Episode() {
   const [discussions, setDiscussions] = useState<Discussion[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingSynopsis, setLoadingSynopsis] = useState(() => {
-  if (!id || !ep) return false
-  return !synopsisCache[`${id}-${ep}`]
-})
+    if (!id || !ep) return false
+    return !synopsisCache[`${id}-${ep}`]
+  })
   const [showDiscussions, setShowDiscussions] = useState(false)
+  
 
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
   const isLoggedIn = !!user
 
   useEffect(() => {
     if (!id || !ep) return
-
     const cacheKey = `${id}-${ep}`
-
-    
 
     fetch(`http://localhost:3001/api/anime/show/${id}`)
       .then((res) => res.json())
@@ -126,7 +124,6 @@ function Episode() {
         setLoadingSynopsis(false)
         return
       }
-
       try {
         const res = await fetch(`http://localhost:3001/api/anime/show/${id}/episode/${ep}`)
         const data = await res.json()
@@ -159,9 +156,7 @@ function Episode() {
           ))
         }
       })
-      .catch(() => {
-        // fail silently
-      })
+      .catch(() => {})
   }, [id, ep])
 
   if (loading) {
@@ -190,8 +185,46 @@ function Episode() {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
 
-      {/* Hero */}
-      <div className="relative h-[240px] overflow-hidden bg-[#1a1815]">
+      {/* ── MOBILE HERO — poster centered in blurred banner ── */}
+      <div className="md:hidden relative overflow-hidden bg-[#1a1815]">
+        <img
+          src={proxyImage(show.image)}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-20 blur-2xl scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0f0e0d]/30 via-transparent to-[#0f0e0d]" />
+        <div className="relative z-10 flex flex-col items-center px-6 pt-8 pb-6">
+          <div className="w-32 rounded-2xl overflow-hidden shadow-2xl border border-white/10 mb-5">
+            <img src={proxyImage(show.image)} alt={show.title} className="w-full object-cover" />
+          </div>
+          <div
+            className="text-[11px] text-[#D13924] cursor-pointer hover:underline mb-1"
+            onClick={() => window.location.href = `/show/${show.id}`}
+          >
+            {show.title}
+          </div>
+          <h1 className="text-lg font-medium text-[#f0ede8] text-center mb-1 leading-tight">
+            Episode {episode.number}{episode.title !== `Episode ${episode.number}` ? ` — ${episode.title}` : ''}
+          </h1>
+          <div className="flex flex-wrap justify-center gap-1.5 mb-2">
+            {show.genres.slice(0, 3).map((g) => (
+              <span key={g} className="text-[10px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 px-2.5 py-0.5 rounded-full">{g}</span>
+            ))}
+            {episode.filler && (
+              <span className="text-[10px] text-[#9a9590] bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">Filler</span>
+            )}
+            {episode.recap && (
+              <span className="text-[10px] text-[#9a9590] bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">Recap</span>
+            )}
+          </div>
+          <p className="text-[11px] text-[#9a9590] text-center">
+            {show.studio} · {formatAirDate(episode.airDate)}
+          </p>
+        </div>
+      </div>
+
+      {/* ── DESKTOP HERO ── */}
+      <div className="hidden md:block relative h-[240px] overflow-hidden bg-[#1a1815]">
         <img
           src={proxyImage(show.image)}
           alt=""
@@ -199,7 +232,6 @@ function Episode() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f0e0d] via-[#0f0e0d]/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0f0e0d] via-transparent to-transparent" />
-
         <div className="absolute bottom-0 left-0 right-0 px-8 pb-6 flex flex-col items-center text-center">
           <div
             className="text-[12px] text-[#D13924] cursor-pointer hover:underline mb-1"
@@ -212,9 +244,7 @@ function Episode() {
           </h1>
           <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
             {show.genres.slice(0, 3).map((g) => (
-              <span key={g} className="text-[10px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 px-2 py-0.5 rounded-full">
-                {g}
-              </span>
+              <span key={g} className="text-[10px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 px-2 py-0.5 rounded-full">{g}</span>
             ))}
             {episode.filler && (
               <span className="text-[10px] text-[#9a9590] bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">Filler</span>
@@ -229,57 +259,74 @@ function Episode() {
         </div>
       </div>
 
-      {/* Body */}
-      <div className="max-w-6xl mx-auto px-8 py-8">
-        <div className="flex gap-6 items-start">
+      {/* ── Body ── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-5 lg:gap-6 items-start">
 
-          {/* Left column */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4">
+          {/* ── Main column ── */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4 w-full">
 
             {/* Episode navigation */}
-            <div className="bg-[#1a1815] border border-white/7 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-[#1a1815] border border-white/7 rounded-xl p-3 sm:p-4 flex items-center justify-between">
               <button
                 onClick={() => episode.number > 1 && (window.location.href = `/show/${show.id}/episode/${episode.number - 1}`)}
                 disabled={episode.number <= 1}
-                className="flex items-center gap-2 text-[12px] text-[#9a9590] hover:text-[#f0ede8] cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 text-[11px] sm:text-[12px] text-[#9a9590] hover:text-[#f0ede8] cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                ← Episode {episode.number - 1}
+                ← <span className="hidden sm:inline">Episode {episode.number - 1}</span><span className="sm:hidden">Prev</span>
               </button>
               <button
                 onClick={() => window.location.href = `/show/${show.id}`}
-                className="text-[12px] text-[#D13924] hover:underline cursor-pointer"
+                className="text-[11px] sm:text-[12px] text-[#D13924] hover:underline cursor-pointer"
               >
                 All episodes
               </button>
               <button
                 onClick={() => (!show.episodes || episode.number < show.episodes) && (window.location.href = `/show/${show.id}/episode/${episode.number + 1}`)}
                 disabled={!!(show.episodes && episode.number >= show.episodes)}
-                className="flex items-center gap-2 text-[12px] text-[#9a9590] hover:text-[#f0ede8] cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 text-[11px] sm:text-[12px] text-[#9a9590] hover:text-[#f0ede8] cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Episode {episode.number + 1} →
+                <span className="hidden sm:inline">Episode {episode.number + 1}</span><span className="sm:hidden">Next</span> →
               </button>
             </div>
 
+            {/* Mobile stats — 2x2 grid */}
+            <div className="md:hidden grid grid-cols-2 gap-2">
+              {[
+                { label: "Score", value: `♥ ${show.score}`, highlight: true },
+                { label: "Episode", value: `${episode.number}${show.episodes ? ` / ${show.episodes}` : ''}` },
+                { label: "Aired", value: formatAirDate(episode.airDate) },
+                { label: "Season", value: `${show.season} ${show.year}` },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-[#1a1815] border border-white/7 rounded-xl px-4 py-3 flex flex-col gap-0.5">
+                  <span className="text-[10px] text-[#9a9590] uppercase tracking-wider">{stat.label}</span>
+                  <span className={`text-[13px] font-medium ${stat.highlight ? 'text-[#D13924]' : 'text-[#f0ede8]'}`}>
+                    {stat.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+
             {/* Synopsis */}
-            <div className="bg-[#1a1815] border border-white/7 rounded-xl p-5">
-              <h2 className="text-[13px] font-medium text-[#f0ede8] mb-3">Synopsis</h2>
+            <div className="bg-[#1a1815] border border-white/7 rounded-xl p-4 sm:p-5">
+              <h2 className="text-[12px] sm:text-[13px] font-medium text-[#f0ede8] mb-2 sm:mb-3">Synopsis</h2>
               {episode.synopsis ? (
-                <p className="text-[13px] text-[#c8c4be] leading-relaxed">{episode.synopsis}</p>
+                <p className="text-[12px] sm:text-[13px] text-[#c8c4be] leading-relaxed">{episode.synopsis}</p>
               ) : loadingSynopsis ? (
-                <p className="text-[13px] text-[#5a5650] animate-pulse">Loading synopsis...</p>
+                <p className="text-[12px] sm:text-[13px] text-[#5a5650] animate-pulse">Loading synopsis...</p>
               ) : (
-                <p className="text-[13px] text-[#5a5650] italic">No synopsis available for this episode</p>
+                <p className="text-[12px] sm:text-[13px] text-[#5a5650] italic">No synopsis available for this episode</p>
               )}
             </div>
 
-            {/* Discussions toggle */}
+            {/* Discussions */}
             <div className="bg-[#1a1815] border border-white/7 rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowDiscussions(!showDiscussions)}
-                className="w-full p-5 flex items-center justify-between cursor-pointer hover:bg-white/3 transition-all"
+                className="w-full p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-white/3 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <h2 className="text-[14px] font-medium text-[#f0ede8]">
+                  <h2 className="text-[13px] sm:text-[14px] font-medium text-[#f0ede8]">
                     Episode {episode.number} discussions
                   </h2>
                   {discussions.length > 0 && (
@@ -297,9 +344,9 @@ function Episode() {
               </button>
 
               {showDiscussions && (
-                <div className="px-5 pb-5 border-t border-white/5">
-                  <div className="flex items-center justify-between py-4">
-                    <p className="text-[12px] text-[#9a9590]">
+                <div className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-white/5">
+                  <div className="flex items-center justify-between py-3 sm:py-4">
+                    <p className="text-[11px] sm:text-[12px] text-[#9a9590]">
                       {discussions.length === 0
                         ? 'No discussions for this episode yet'
                         : `${discussions.length} thread${discussions.length !== 1 ? 's' : ''} about this episode`}
@@ -307,7 +354,7 @@ function Episode() {
                     {isLoggedIn && (
                       <button
                         onClick={() => window.location.href = `/thread/new?showId=${show.id}&showName=${encodeURIComponent(show.title)}&episode=${episode.number}&threadType=episode`}
-                        className="text-[11px] text-white px-3 py-1.5 rounded-full cursor-pointer hover:opacity-90 transition-all"
+                        className="text-[10px] sm:text-[11px] text-white px-3 py-1.5 rounded-full cursor-pointer hover:opacity-90 transition-all whitespace-nowrap"
                         style={{ backgroundColor: '#D13924' }}
                       >
                         + Start a thread
@@ -334,20 +381,18 @@ function Episode() {
                         <div
                           key={disc._id}
                           onClick={() => window.location.href = `/thread/${disc._id}`}
-                          className="border border-white/5 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
+                          className="border border-white/5 rounded-xl p-3 sm:p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
                         >
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex-1 min-w-0">
-                              <div className="text-[13px] font-medium text-[#f0ede8] mb-1">{disc.threadTitle}</div>
-                              <div className="text-[11px] text-[#9a9590]">by @{disc.username} · {timeAgo(disc.createdAt)}</div>
+                              <div className="text-[12px] sm:text-[13px] font-medium text-[#f0ede8] mb-1 truncate">{disc.threadTitle}</div>
+                              <div className="text-[10px] sm:text-[11px] text-[#9a9590]">by @{disc.username} · {timeAgo(disc.createdAt)}</div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               {disc.hasSpoiler && (
-                                <span className="text-[9px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 px-2 py-0.5 rounded-full">
-                                  ⚠ Spoiler
-                                </span>
+                                <span className="text-[9px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 px-2 py-0.5 rounded-full">⚠ Spoiler</span>
                               )}
-                              <span className="text-[11px] text-[#9a9590]">
+                              <span className="text-[10px] sm:text-[11px] text-[#9a9590]">
                                 <span className="text-[#D13924]">{disc.replies.length}</span> replies
                               </span>
                             </div>
@@ -357,7 +402,7 @@ function Episode() {
                               e.stopPropagation()
                               window.location.href = `/thread/${disc._id}`
                             }}
-                            className="text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
+                            className="text-[10px] sm:text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-md px-3 py-1.5 hover:bg-[#D13924]/20 cursor-pointer"
                           >
                             Join thread ›
                           </button>
@@ -371,15 +416,13 @@ function Episode() {
 
           </div>
 
-          {/* Right sidebar */}
-          <div className="w-[260px] shrink-0 flex flex-col gap-4">
+          {/* ── Right sidebar — desktop/tablet only ── */}
+          <div className="hidden md:flex w-[260px] shrink-0 flex-col gap-4">
 
-            {/* Poster */}
             <div className="rounded-xl overflow-hidden border border-white/7">
               <img src={proxyImage(show.image)} alt={show.title} className="w-full object-cover" />
             </div>
 
-            {/* Episode details */}
             <div className="bg-[#1a1815] border border-white/7 rounded-xl p-5">
               <h2 className="text-[13px] font-medium text-[#f0ede8] mb-4">Details</h2>
               <div className="flex flex-col gap-3">
@@ -406,19 +449,15 @@ function Episode() {
               </div>
             </div>
 
-            {/* Genres */}
             <div className="bg-[#1a1815] border border-white/7 rounded-xl p-5">
               <h2 className="text-[13px] font-medium text-[#f0ede8] mb-3">Genres & Themes</h2>
               <div className="flex flex-wrap gap-2">
                 {[...show.genres, ...show.themes].map((g) => (
-                  <span key={g} className="text-[10px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 px-2 py-0.5 rounded-full">
-                    {g}
-                  </span>
+                  <span key={g} className="text-[10px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 px-2 py-0.5 rounded-full">{g}</span>
                 ))}
               </div>
             </div>
 
-            {/* Back to show */}
             <div
               onClick={() => window.location.href = `/show/${show.id}`}
               className="bg-[#1a1815] border border-white/7 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:border-[#D13924]/30 transition-all"
@@ -428,6 +467,7 @@ function Episode() {
             </div>
 
           </div>
+
         </div>
       </div>
     </div>

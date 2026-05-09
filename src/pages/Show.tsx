@@ -121,6 +121,7 @@ type WatchlistEntry = {
   showId: number;
   status: WatchStatus;
   currentEpisode: number;
+  rating: number | null;
 };
 
 function Show() {
@@ -139,6 +140,8 @@ function Show() {
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [hideFiller, setHideFiller] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [rating, setRating] = useState<number | null>(null)
+const [openRating, setOpenRating] = useState(false)
 
   const user = localStorage.getItem("user") || sessionStorage.getItem("user");
   const isLoggedIn = !!user;
@@ -170,6 +173,7 @@ function Show() {
             setOnList(true);
             setWatchStatus(entry.status);
             setCurrentEpisode(entry.currentEpisode);
+            setRating(entry.rating ?? null);
           }
         })
         .catch(() => {});
@@ -254,7 +258,7 @@ function Show() {
 
   if (loading) {
     return (
-      <div className="bg-[#0f0e0d] min-h-screen text-white">
+      <div className="bg-[#0f0e0d] min-h-screen text-white" onClick={() => setOpenRating(false)}>
         <Nav />
         <div className="flex items-center justify-center h-96">
           <p className="text-[#9a9590] text-sm animate-pulse">Loading show...</p>
@@ -272,6 +276,17 @@ function Show() {
         </div>
       </div>
     );
+  }
+
+  const handleRating = async (newRating: number) => {
+    setRating(newRating)
+    setOpenRating(false)
+    try {
+      await updateWatchlistEntry(show!.id, { rating: newRating })
+      toast.success(`Rated ${newRating}/10`)
+    } catch {
+      toast.error('Failed to save rating')
+    }
   }
 
   const totalEpisodePages = show.totalEpisodePages || 1;
@@ -413,9 +428,53 @@ function Show() {
                 </button>
               )}
 
+              {/* Rating button — only show if on list */}
+              {onList && (
+                <div className="relative ml-auto" style={{ zIndex: openRating ? 50 : 1 }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setOpenRating(!openRating) }}
+                    className="flex items-center gap-1.5 text-[11px] sm:text-[12px] border border-white/10 px-3 sm:px-4 py-2 rounded-full cursor-pointer hover:bg-white/5 transition-all whitespace-nowrap"
+                    style={{
+                      color: rating ? '#D13924' : '#9a9590',
+                      borderColor: rating ? 'rgba(209,57,36,0.3)' : undefined,
+                      backgroundColor: rating ? 'rgba(209,57,36,0.08)' : undefined,
+                    }}
+                  >
+                    ♥ {rating ? `${rating}/10` : 'Rate'}
+                  </button>
+                  {openRating && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-full right-0 mt-1 bg-[#1a1815] border border-white/10 rounded-xl overflow-hidden shadow-2xl"
+                      style={{ zIndex: 50, minWidth: '80px' }}
+                    >
+                      {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => handleRating(n)}
+                          className={`w-full text-left px-4 py-2 text-[12px] transition-all cursor-pointer ${
+                            rating === n ? 'text-white bg-[#D13924]' : 'text-[#9a9590] hover:text-[#f0ede8] hover:bg-white/5'
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                      {rating && (
+                        <button
+                          onClick={() => handleRating(0)}
+                          className="w-full text-left px-4 py-2 text-[11px] text-[#5a5650] hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer border-t border-white/5"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 onClick={() => setShowTrailer(!showTrailer)}
-                className="text-[11px] sm:text-[12px] text-[#f0ede8] border border-white/10 px-3 sm:px-4 py-2 rounded-full cursor-pointer hover:bg-white/5 transition-all ml-auto whitespace-nowrap"
+                className="text-[11px] sm:text-[12px] text-[#f0ede8] border border-white/10 px-3 sm:px-4 py-2 rounded-full cursor-pointer hover:bg-white/5 transition-all whitespace-nowrap"
               >
                 {showTrailer ? "Hide trailer" : "▶ Trailer"}
               </button>
