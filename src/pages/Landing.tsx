@@ -4,6 +4,7 @@ import Hero from '../components/Hero/Hero'
 import Calendar from '../components/Calendar/Calendar'
 import Trending from '../components/Trending/Trending'
 import PopularDiscussions from '../components/PopularDiscussions/PopularDiscussions'
+import AiringToday from '../components/AiringToday/AiringToday'
 
 function Landing() {
   useEffect(() => {
@@ -16,13 +17,25 @@ function Landing() {
   return (
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
+
+      {/* Hero — all screen sizes */}
       <Hero watchedIds={[]} onAdded={() => {}} />
-      <Calendar />
+
+      {/* Mobile/tablet — airing today */}
+      <div className="lg:hidden">
+        <AiringToday />
+      </div>
+
+      {/* Weekly grid — tablet and desktop only */}
+      <div className="hidden lg:block">
+        <Calendar />
+      </div>
+
       <Trending watchedIds={[]} onAdded={() => {}} />
       <PopularDiscussions />
 
       {/* Call to action */}
-      <div className="px-6 py-12 md:py-16 border-t border-white/5 text-center">
+      <div className="px-4 md:px-6 py-12 md:py-16 border-t border-white/5 text-center">
         <h2 className="text-xl md:text-2xl font-medium text-[#f0ede8] mb-3">
           Your nakama are already inside
         </h2>
