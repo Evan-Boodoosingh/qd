@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import Calendar from "./components/Calendar/Calendar";
-import Friends from "./components/Friends/Friends";
+// import Friends from "./components/Friends/Friends";
 import Discussions from "./components/Discussions/Discussions";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -48,12 +48,10 @@ function HomePage() {
     <div className="bg-[#0f0e0d] min-h-screen text-white">
       <Nav />
       {/* Mobile only — airing today timeline */}
-      <AiringToday />
-      {/* Desktop layout — unchanged */}
+      
+     <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
+     <AiringToday />
       <div className="hidden lg:block">
-        <Hero watchedIds={watchedIds} onAdded={handleAddedToList} />
-      </div>
-      <div className="hidden md:block">
   <Calendar />
 </div>
       {/* <Friends /> */}

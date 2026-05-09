@@ -42,6 +42,12 @@ type SuggestedFriend = {
   sharedShows: number
 }
 
+type SentRequest = {
+  _id: string
+  username: string
+  displayName: string
+}
+
 type Reply = {
   _id: string
   user: string
@@ -285,6 +291,7 @@ function Friends() {
   const [friends, setFriends] = useState<FriendWithWatchlist[]>([])
   const [friendThreads, setFriendThreads] = useState<FriendThread[]>([])
   const [requests, setRequests] = useState<FriendRequest[]>([])
+  const [sentRequestsList, setSentRequestsList] = useState<SentRequest[]>([])
   const [suggested, setSuggested] = useState<SuggestedFriend[]>([])
   const [myWatchlist, setMyWatchlist] = useState<WatchlistEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -292,7 +299,7 @@ function Friends() {
   const [requestsOpen, setRequestsOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
   const [sentRequests, setSentRequests] = useState<string[]>([])
-  const [dismissedSuggestions] = useState<string[]>([])
+  const [requestsTab, setRequestsTab] = useState<'received' | 'sent'>('received')
 
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
 
@@ -301,17 +308,19 @@ function Friends() {
 
     const fetchAll = async () => {
       try {
-        const [friendsRes, requestsRes, suggestedRes, myListRes, threadsRes] = await Promise.all([
+        const [friendsRes, requestsRes, sentRequestsRes, suggestedRes, myListRes, threadsRes] = await Promise.all([
           fetch('http://localhost:3001/api/friends', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('http://localhost:3001/api/friends/requests', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('http://localhost:3001/api/friends/requests/sent', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('http://localhost:3001/api/friends/suggested', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('http://localhost:3001/api/watchlist', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('http://localhost:3001/api/threads'),
         ])
 
-        const [friendsData, requestsData, suggestedData, myListData, threadsData] = await Promise.all([
+        const [friendsData, requestsData, sentRequestsData, suggestedData, myListData, threadsData] = await Promise.all([
           friendsRes.json(),
           requestsRes.json(),
+          sentRequestsRes.json(),
           suggestedRes.json(),
           myListRes.json(),
           threadsRes.json(),
@@ -320,11 +329,11 @@ function Friends() {
         const myList = Array.isArray(myListData) ? myListData : []
         setMyWatchlist(myList)
         setRequests(Array.isArray(requestsData) ? requestsData : [])
+        setSentRequestsList(Array.isArray(sentRequestsData) ? sentRequestsData : [])
         setSuggested(Array.isArray(suggestedData) ? suggestedData : [])
 
         const friendsList: Friend[] = Array.isArray(friendsData) ? friendsData : []
 
-        // Fetch friend watchlists
         const friendsWithWatchlists = await Promise.all(
           friendsList.map(async (friend) => {
             try {
@@ -340,7 +349,6 @@ function Friends() {
         )
         setFriends(friendsWithWatchlists)
 
-        // Build friend threads from existing threads API
         if (Array.isArray(threadsData) && friendsList.length > 0) {
           const friendMap: Record<string, Friend> = {}
           for (const f of friendsList) friendMap[f._id] = f
@@ -425,18 +433,22 @@ function Friends() {
   const handleAddSuggested = async (username: string, id: string) => {
     setSentRequests(prev => [...prev, id])
     try {
-      await fetch(`http://localhost:3001/api/friends/request/${username}`, {
+      const res = await fetch(`http://localhost:3001/api/friends/request/${username}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
-      toast.success('Friend request sent')
+      const data = await res.json()
+      if (!res.ok && data.message !== 'Already friends' && data.message !== 'Request already sent') {
+        setSentRequests(prev => prev.filter(i => i !== id))
+      }
     } catch {
-      toast.error('Failed to send request')
+      setSentRequests(prev => prev.filter(i => i !== id))
     }
   }
 
   const myShowIds = new Set(myWatchlist.map(e => e.showId))
   const friendsWithWatching = friends.filter(f => f.watchlist.some(e => e.status === 'watching'))
+  const totalPending = requests.length
 
   if (loading) {
     return (
@@ -468,18 +480,18 @@ function Friends() {
               onClick={() => setRequestsOpen(true)}
               className="relative flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1a1815] border border-white/7 hover:border-white/15 transition-all cursor-pointer"
             >
-              <Users size={16} />
-              {requests.length > 0 && (
+              <Users size={16} className="text-[#9a9590]" />
+              {totalPending > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#D13924] text-white text-[10px] font-bold flex items-center justify-center">
-                  {requests.length}
+                  {totalPending}
                 </span>
               )}
             </button>
             <button
               onClick={() => setManageOpen(true)}
-              className="flex items-center px-3 py-2 rounded-xl bg-[#1a1815] border border-white/7 hover:border-white/15 transition-all cursor-pointer text-[#9a9590] hover:text-[#f0ede8]"
+              className="flex items-center px-3 py-2 rounded-xl bg-[#1a1815] border border-white/7 hover:border-white/15 transition-all cursor-pointer"
             >
-              <Settings size={16} />
+              <Settings size={16} className="text-[#9a9590]" />
             </button>
           </div>
         </div>
@@ -594,50 +606,123 @@ function Friends() {
       </div>
 
       {/* Friend Requests Panel */}
-      <SlidePanel open={requestsOpen} onClose={() => setRequestsOpen(false)} title="Friend Requests">
-        {requests.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[#9a9590] text-sm">No pending requests</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {requests.map((req) => {
-              const color = getColor(req.from._id)
-              return (
-                <div key={req._id} className="bg-[#0f0e0d] border border-white/7 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
-                      style={{ backgroundColor: `${color}25`, color }}
-                    >
-                      {getInitials(req.from.displayName, req.from.username)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium text-[#f0ede8]">{req.from.displayName || req.from.username}</div>
-                      <div className="text-[11px] text-[#9a9590]">@{req.from.username}</div>
-                    </div>
+     <SlidePanel open={requestsOpen} onClose={() => setRequestsOpen(false)} title="Requests">
+
+  {/* Toggle */}
+  <div className="flex gap-1 bg-[#0f0e0d] border border-white/7 rounded-xl p-1 mb-6">
+    <button
+      onClick={() => setRequestsTab('received')}
+      className={`flex-1 py-2 rounded-lg text-[12px] font-medium cursor-pointer transition-all flex items-center justify-center gap-2 ${
+        requestsTab === 'received' ? 'text-white' : 'text-[#9a9590]'
+      }`}
+      style={requestsTab === 'received' ? { backgroundColor: '#D13924' } : {}}
+    >
+      Received
+      {requests.length > 0 && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${requestsTab === 'received' ? 'bg-white/20' : 'bg-white/10'}`}>
+          {requests.length}
+        </span>
+      )}
+    </button>
+    <button
+      onClick={() => setRequestsTab('sent')}
+      className={`flex-1 py-2 rounded-lg text-[12px] font-medium cursor-pointer transition-all flex items-center justify-center gap-2 ${
+        requestsTab === 'sent' ? 'text-white' : 'text-[#9a9590]'
+      }`}
+      style={requestsTab === 'sent' ? { backgroundColor: '#D13924' } : {}}
+    >
+      Sent
+      {sentRequestsList.length > 0 && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${requestsTab === 'sent' ? 'bg-white/20' : 'bg-white/10'}`}>
+          {sentRequestsList.length}
+        </span>
+      )}
+    </button>
+  </div>
+
+  {/* Received tab */}
+  {requestsTab === 'received' && (
+    <>
+      {requests.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-[#9a9590] text-sm">No pending requests</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {requests.map((req) => {
+            const color = getColor(req.from._id)
+            return (
+              <div key={req._id} className="bg-[#0f0e0d] border border-white/7 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
+                    style={{ backgroundColor: `${color}25`, color }}
+                  >
+                    {getInitials(req.from.displayName, req.from.username)}
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleAccept(req._id)}
-                      className="flex-1 text-[12px] text-white py-2 rounded-full cursor-pointer hover:opacity-90 transition-all font-medium"
-                      style={{ backgroundColor: '#D13924' }}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleDecline(req._id)}
-                      className="flex-1 text-[12px] text-[#9a9590] py-2 rounded-full cursor-pointer border border-white/10 hover:bg-white/5 transition-all"
-                    >
-                      Decline
-                    </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium text-[#f0ede8]">{req.from.displayName || req.from.username}</div>
+                    <div className="text-[11px] text-[#9a9590]">@{req.from.username}</div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </SlidePanel>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAccept(req._id)}
+                    className="flex-1 text-[12px] text-white py-2 rounded-full cursor-pointer hover:opacity-90 transition-all font-medium"
+                    style={{ backgroundColor: '#D13924' }}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleDecline(req._id)}
+                    className="flex-1 text-[12px] text-[#9a9590] py-2 rounded-full cursor-pointer border border-white/10 hover:bg-white/5 transition-all"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </>
+  )}
+
+  {/* Sent tab */}
+  {requestsTab === 'sent' && (
+    <>
+      {sentRequestsList.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-[#9a9590] text-sm">No sent requests</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {sentRequestsList.map(person => {
+            const color = getColor(person._id)
+            return (
+              <div key={person._id} className="flex items-center gap-3 py-2 border-b border-white/5">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
+                  style={{ backgroundColor: `${color}25`, color }}
+                >
+                  {getInitials(person.displayName, person.username)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] text-[#f0ede8] truncate">{person.displayName || person.username}</div>
+                  <div className="text-[11px] text-[#9a9590]">@{person.username}</div>
+                </div>
+                <span className="text-[11px] text-[#9a9590] border border-white/10 px-2.5 py-1 rounded-full shrink-0">
+                  Pending
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </>
+  )}
+
+</SlidePanel>
 
       {/* Manage Friends Panel */}
       <SlidePanel open={manageOpen} onClose={() => setManageOpen(false)} title="Manage Friends">
@@ -674,12 +759,13 @@ function Friends() {
           )}
         </div>
 
-        {suggested.filter(s => !dismissedSuggestions.includes(s._id)).length > 0 && (
+        {/* Suggested */}
+        {suggested.filter(s => !friends.some(f => f._id === s._id)).length > 0 && (
           <div>
             <h3 className="text-[12px] text-[#9a9590] uppercase tracking-wider mb-3">People you might know</h3>
             <div className="flex flex-col gap-3">
               {suggested
-                .filter(s => !dismissedSuggestions.includes(s._id))
+                .filter(s => !friends.some(f => f._id === s._id))
                 .map(person => {
                   const color = getColor(person._id)
                   const sent = sentRequests.includes(person._id)

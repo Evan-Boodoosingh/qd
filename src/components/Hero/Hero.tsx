@@ -35,9 +35,9 @@ function Hero({ watchedIds = [], onAdded }: Props) {
     fetchSeasonalOnly()
       .then((data: Show[]) => {
         const filtered = data
-  .filter((s: Show) => s.image && s.score >= 7.5 && s.genres.length > 0)
-  .sort((a: Show, b: Show) => b.score - a.score)
-  .slice(0, 5)
+          .filter((s: Show) => s.image && s.score >= 7.5 && s.genres.length > 0)
+          .sort((a: Show, b: Show) => b.score - a.score)
+          .slice(0, 5)
         seasonalCache = filtered
         setShows(filtered)
         setLoading(false)
@@ -59,7 +59,6 @@ function Hero({ watchedIds = [], onAdded }: Props) {
       const airingEpisode = show.airing
         ? (show.episodeList?.length || null)
         : show.episodes
-
       await addToWatchlist({
         showId: show.id,
         showName: show.title,
@@ -76,7 +75,7 @@ function Hero({ watchedIds = [], onAdded }: Props) {
 
   if (loading) {
     return (
-      <div className="relative h-[500px] bg-[#1a1815] flex items-center justify-center">
+      <div className="relative h-[320px] md:h-[380px] lg:h-[500px] bg-[#1a1815] flex items-center justify-center">
         <div className="text-[#9a9590] text-sm animate-pulse">Loading season...</div>
       </div>
     )
@@ -88,8 +87,9 @@ function Hero({ watchedIds = [], onAdded }: Props) {
   const isAdded = watchedIds.includes(show.id)
 
   return (
-    <div className="relative h-[500px] overflow-hidden bg-[#0f0e0d]">
+    <div className="relative h-[320px] md:h-[380px] lg:h-[500px] overflow-hidden bg-[#0f0e0d]">
 
+      {/* Background blur */}
       <img
         src={proxyImage(show.image)}
         alt=""
@@ -97,38 +97,40 @@ function Hero({ watchedIds = [], onAdded }: Props) {
       />
       <div className="absolute inset-0 bg-[#0f0e0d]/60" />
 
-      <div className="relative h-full max-w-6xl mx-auto px-8 flex items-center gap-12 z-10">
+      {/* Content — same layout at all sizes, just scaled */}
+      <div className="relative h-full max-w-6xl mx-auto px-4 md:px-6 lg:px-8 flex items-center gap-6 md:gap-10 lg:gap-12 z-10 py-6">
 
+        {/* Left — text */}
         <div className="flex-1 min-w-0">
-          <div className="inline-flex items-center gap-2 text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-full px-3 py-1.5 mb-5">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#D13924] animate-pulse" />
+          <div className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-full px-2.5 md:px-3 py-1 md:py-1.5 mb-3 md:mb-5">
+            <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-[#D13924] animate-pulse" />
             Airing now · Spring 2026
           </div>
 
           <h2
             onClick={() => window.location.href = `/show/${show.id}`}
-            className="text-4xl font-medium text-[#f0ede8] mb-3 leading-tight cursor-pointer hover:text-[#D13924] transition-all"
+            className="text-xl md:text-3xl lg:text-4xl font-medium text-[#f0ede8] mb-2 md:mb-3 leading-tight cursor-pointer hover:text-[#D13924] transition-all line-clamp-2"
           >
             {show.title}
           </h2>
 
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
-            <span className="text-[12px] text-[#c8c4be]">{show.genres.slice(0, 3).join(' · ')}</span>
-            <span className="text-[11px] text-[#D13924] bg-[#D13924]/10 px-2 py-0.5 rounded border border-[#D13924]/20">
+          <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4 flex-wrap">
+            <span className="text-[11px] md:text-[12px] text-[#c8c4be]">{show.genres.slice(0, 2).join(' · ')}</span>
+            <span className="text-[10px] md:text-[11px] text-[#D13924] bg-[#D13924]/10 px-2 py-0.5 rounded border border-[#D13924]/20">
               {show.day}
             </span>
-            <span className="text-[12px] text-[#9a9590]">♥ {show.score}</span>
+            <span className="text-[11px] md:text-[12px] text-[#9a9590]">♥ {show.score}</span>
           </div>
 
-          <p className="text-[13px] text-[#9a9590] leading-relaxed mb-8 line-clamp-3 max-w-lg">
+          <p className="hidden lg:block text-[13px] text-[#9a9590] leading-relaxed mb-8 line-clamp-3 max-w-lg">
             {show.synopsis}
           </p>
 
-          <div className="flex gap-3 mb-10">
+          <div className="flex gap-2 md:gap-3 mb-6 md:mb-10">
             {isLoggedIn ? (
               <button
                 onClick={(e) => handleAddToList(e, show)}
-                className="text-white text-sm font-medium px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-all"
+                className="text-[11px] md:text-sm font-medium px-4 md:px-6 py-2 md:py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-all"
                 style={{
                   backgroundColor: isAdded ? 'rgba(209,57,36,0.2)' : '#D13924',
                   color: isAdded ? '#D13924' : '#fff',
@@ -140,37 +142,38 @@ function Hero({ watchedIds = [], onAdded }: Props) {
             ) : (
               <button
                 onClick={() => window.location.href = '/register'}
-                className="text-white text-sm font-medium px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-all"
-                style={{ backgroundColor: '#D13924' }}
+                className="text-[11px] md:text-sm font-medium px-4 md:px-6 py-2 md:py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-all"
+                style={{ backgroundColor: '#D13924', color: '#fff' }}
               >
                 + Add to list
               </button>
             )}
             <button
               onClick={() => window.location.href = `/show/${show.id}`}
-              className="bg-white/10 text-[#f0ede8] text-sm px-6 py-2.5 rounded-full border border-white/15 hover:bg-white/15 cursor-pointer transition-all"
+              className="bg-white/10 text-[#f0ede8] text-[11px] md:text-sm px-4 md:px-6 py-2 md:py-2.5 rounded-full border border-white/15 hover:bg-white/15 cursor-pointer transition-all"
             >
               View show
             </button>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 md:gap-2">
             {shows.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrent(i)}
                 className={`h-[3px] rounded-full transition-all duration-300 cursor-pointer ${
-                  i === current ? 'w-8 bg-[#D13924]' : 'w-4 bg-white/25 hover:bg-white/40'
+                  i === current ? 'w-6 md:w-8 bg-[#D13924]' : 'w-3 md:w-4 bg-white/25 hover:bg-white/40'
                 }`}
               />
             ))}
           </div>
         </div>
 
+        {/* Right — poster */}
         <div className="shrink-0">
           <div
             onClick={() => window.location.href = `/show/${show.id}`}
-            className="w-[260px] h-[370px] rounded-xl overflow-hidden shadow-2xl cursor-pointer hover:opacity-90 transition-all"
+            className="w-[120px] h-[170px] md:w-[190px] md:h-[270px] lg:w-[260px] lg:h-[370px] rounded-xl overflow-hidden shadow-2xl cursor-pointer hover:opacity-90 transition-all"
           >
             <img
               src={proxyImage(show.image)}
