@@ -224,57 +224,58 @@ function WatchingCard({ friend, myShowIds }: { friend: FriendWithWatchlist, mySh
   return (
     <div
       onClick={() => window.location.href = `/profile/${friend.username}`}
-      className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
+      className="bg-[#1a1815] border border-white/7 rounded-xl p-3 cursor-pointer hover:border-[#D13924]/30 transition-all flex items-center gap-3"
     >
-      <div className="flex items-center gap-3 mb-3">
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
-          style={{ backgroundColor: `${color}35`, color }}
-        >
-          {getInitials(friend.displayName, friend.username)}
+      {/* Avatar */}
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
+        style={{ backgroundColor: `${color}35`, color }}
+      >
+        {getInitials(friend.displayName, friend.username)}
+      </div>
+
+      {/* Name + shows */}
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-medium text-[#f0ede8] truncate mb-0.5">
+          {friend.displayName || friend.username}
         </div>
-        <div className="min-w-0">
-          <div className="text-[13px] font-medium text-[#f0ede8] truncate">
-            {friend.displayName || friend.username}
+        <div className="flex flex-col gap-0.5">
+          {watching.map((show) => {
+            const isShared = myShowIds.has(show.showId)
+            return (
+              <div
+                key={show.showId}
+                onClick={(e) => { e.stopPropagation(); window.location.href = `/show/${show.showId}` }}
+                className={`text-[11px] truncate cursor-pointer hover:underline ${
+                  isShared ? 'text-[#D13924]' : 'text-[#9a9590]'
+                }`}
+              >
+                {isShared && '● '}{show.showName}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Poster stack */}
+      <div className="flex shrink-0">
+        {watching.slice(0, 3).map((show, i) => (
+          <div
+            key={show.showId}
+            onClick={(e) => { e.stopPropagation(); window.location.href = `/show/${show.showId}` }}
+            className={`w-8 h-11 rounded-md overflow-hidden border cursor-pointer hover:opacity-90 transition-all ${
+              myShowIds.has(show.showId) ? 'border-[#D13924]' : 'border-white/10'
+            }`}
+            style={{ marginLeft: i === 0 ? 0 : '-8px', zIndex: watching.length - i, position: 'relative' }}
+          >
+            {show.image ? (
+              <img src={proxyImage(show.image)} alt={show.showName} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#0f0e0d]" />
+            )}
           </div>
-          <div className="text-[11px] text-[#9a9590]">@{friend.username}</div>
-        </div>
+        ))}
       </div>
-
-      <div className="flex gap-2">
-        {watching.map((show) => {
-          const isShared = myShowIds.has(show.showId)
-          return (
-            <div
-              key={show.showId}
-              onClick={(e) => {
-                e.stopPropagation()
-                window.location.href = `/show/${show.showId}`
-              }}
-              className={`flex-1 rounded-lg overflow-hidden border transition-all cursor-pointer ${
-                isShared ? 'border-[#D13924]' : 'border-white/10'
-              }`}
-              style={{ aspectRatio: '3/4' }}
-            >
-              {show.image ? (
-                <img
-                  src={proxyImage(show.image)}
-                  alt={show.showName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-[#0f0e0d] flex items-center justify-center p-1">
-                  <span className="text-[9px] text-[#9a9590] text-center leading-tight">{show.showName}</span>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {watching.some(s => myShowIds.has(s.showId)) && (
-        <div className="mt-2 text-[10px] text-[#D13924]">● Orange border = you both watch it</div>
-      )}
     </div>
   )
 }

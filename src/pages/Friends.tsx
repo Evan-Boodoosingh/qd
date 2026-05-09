@@ -232,55 +232,65 @@ function WatchingCard({ friend, myShowIds }: { friend: FriendWithWatchlist, mySh
       onClick={() => window.location.href = `/profile/${friend.username}`}
       className="bg-[#1a1815] border border-white/7 rounded-xl p-4 cursor-pointer hover:border-[#D13924]/30 transition-all"
     >
-      <div className="flex items-center gap-3 mb-3">
+      {/* Friend info */}
+      <div className="flex items-center gap-2.5 mb-4">
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
           style={{ backgroundColor: `${color}35`, color }}
         >
           {getInitials(friend.displayName, friend.username)}
         </div>
         <div className="min-w-0">
-          <div className="text-[13px] font-medium text-[#f0ede8] truncate">
+          <div className="text-[13px] font-medium text-[#f0ede8] truncate leading-tight">
             {friend.displayName || friend.username}
           </div>
-          <div className="text-[11px] text-[#9a9590]">@{friend.username}</div>
+          <div className="text-[10px] text-[#9a9590]">@{friend.username}</div>
+        </div>
+        <div className="ml-auto shrink-0">
+          <span className="text-[10px] text-[#9a9590] bg-white/5 px-2 py-1 rounded-full">
+            {watching.length} watching
+          </span>
         </div>
       </div>
 
-      <div className="flex gap-2">
+      {/* Show cards */}
+      <div className="flex flex-col gap-2">
         {watching.map((show) => {
           const isShared = myShowIds.has(show.showId)
           return (
             <div
               key={show.showId}
-              onClick={(e) => {
-                e.stopPropagation()
-                window.location.href = `/show/${show.showId}`
-              }}
-              className={`flex-1 rounded-lg overflow-hidden border transition-all cursor-pointer ${
-                isShared ? 'border-[#D13924]' : 'border-white/10'
+              onClick={(e) => { e.stopPropagation(); window.location.href = `/show/${show.showId}` }}
+              className={`flex items-center gap-3 p-2 rounded-lg border transition-all cursor-pointer hover:opacity-90 ${
+                isShared
+                  ? 'border-[#D13924]/40 bg-[#D13924]/05'
+                  : 'border-white/5 bg-white/3'
               }`}
-              style={{ aspectRatio: '3/4' }}
             >
-              {show.image ? (
-                <img
-                  src={proxyImage(show.image)}
-                  alt={show.showName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-[#0f0e0d] flex items-center justify-center p-1">
-                  <span className="text-[9px] text-[#9a9590] text-center leading-tight">{show.showName}</span>
+              {/* Poster */}
+              <div className="w-8 h-11 rounded-md overflow-hidden shrink-0">
+                {show.image ? (
+                  <img src={proxyImage(show.image)} alt={show.showName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-[#0f0e0d]" />
+                )}
+              </div>
+              {/* Title */}
+              <div className="flex-1 min-w-0">
+                <div className={`text-[12px] font-medium truncate ${isShared ? 'text-[#D13924]' : 'text-[#f0ede8]'}`}>
+                  {show.showName}
                 </div>
+                {isShared && (
+                  <div className="text-[10px] text-[#D13924]/70 mt-0.5">You both watch this</div>
+                )}
+              </div>
+              {isShared && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#D13924] shrink-0" />
               )}
             </div>
           )
         })}
       </div>
-
-      {watching.some(s => myShowIds.has(s.showId)) && (
-        <div className="mt-2 text-[10px] text-[#D13924]">● Orange border = you both watch it</div>
-      )}
     </div>
   )
 }
