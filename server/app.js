@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://qd-production.up.railway.app',
+    'https://qd-two.vercel.app',
     /\.vercel\.app$/,
   ],
   credentials: true,
