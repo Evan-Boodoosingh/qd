@@ -7,14 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://qd-two.vercel.app',
-    /\.vercel\.app$/,
-  ],
-  credentials: true,
-}));
+app.use(cors())
 app.use(express.json());
 
 // Test route
