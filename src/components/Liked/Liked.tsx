@@ -1,3 +1,4 @@
+import API from '../../services/api'
 import { useState, useEffect } from 'react'
 import { proxyImage } from '../../services/anime'
 
@@ -43,7 +44,7 @@ function Liked() {
 
     const fetchData = async () => {
       try {
-        const friendsRes = await fetch('http://localhost:3001/api/friends', {
+        const friendsRes = await fetch(`${API}/api/friends`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         const friendsData = await friendsRes.json()
@@ -57,7 +58,7 @@ function Liked() {
         const friendsWithWatchlists: FriendWithWatchlist[] = await Promise.all(
           friendsData.map(async (friend: FriendWithWatchlist) => {
             try {
-              const res = await fetch(`http://localhost:3001/api/watchlist/user/${friend._id}`, {
+              const res = await fetch(`${API}/api/watchlist/user/${friend._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
               })
               const watchlist = res.ok ? await res.json() : []

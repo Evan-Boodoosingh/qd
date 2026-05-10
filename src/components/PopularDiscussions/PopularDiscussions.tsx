@@ -1,3 +1,4 @@
+import API from '../../services/api'
 import { useState, useEffect } from 'react'
 
 type Reply = {
@@ -35,7 +36,7 @@ function PopularDiscussions() {
   const user = localStorage.getItem('user') || sessionStorage.getItem('user')
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/threads')
+    fetch(`${API}/api/threads`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

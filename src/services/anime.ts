@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:3001/api/anime'
+import API from './api'
+const API_BASE = `${API}/api/anime`
 
 export async function fetchCurrentSeason() {
   const response = await fetch(`${API_BASE}/season`)
@@ -28,7 +29,7 @@ export async function searchAnime(query: string) {
 
 export function proxyImage(url: string | null): string {
   if (!url) return ''
-  return `http://localhost:3001/api/anime/image?url=${encodeURIComponent(url)}`
+  return `${API}/api/anime/image?url=${encodeURIComponent(url)}`
 }
 
 

@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:3001/api/watchlist'
+import API from './api'
+const API_BASE = `${API}/api/watchlist`
 
 const getToken = () =>
   localStorage.getItem('token') || sessionStorage.getItem('token')

@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
 import { toast } from '../components/Toast/toastService'
@@ -24,7 +25,7 @@ function EditProfile() {
       return
     }
 
-    fetch('http://localhost:3001/api/users/me', {
+    fetch(`${API}/api/users/me`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -66,7 +67,7 @@ const handleSave = async () => {
   }
 
   try {
-    const res = await fetch('http://localhost:3001/api/users/me', {
+    const res = await fetch(`${API}/api/users/me`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

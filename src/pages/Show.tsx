@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Nav from "../components/Nav/Nav";
@@ -149,7 +150,7 @@ const [openRating, setOpenRating] = useState(false)
   useEffect(() => {
     if (!id) return;
 
-    fetch(`http://localhost:3001/api/anime/show/${id}`)
+    fetch(`${API}/api/anime/show/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setShow(data);
@@ -160,7 +161,7 @@ const [openRating, setOpenRating] = useState(false)
       })
       .catch(() => setLoading(false));
 
-    fetch(`http://localhost:3001/api/threads?showId=${id}`)
+    fetch(`${API}/api/threads?showId=${id}`)
       .then((res) => res.json())
       .then((data) => setDiscussions(Array.isArray(data) ? data : []))
       .catch(() => {});
@@ -185,7 +186,7 @@ const [openRating, setOpenRating] = useState(false)
     if (episodePages[page]) return;
     setLoadingEpisodes(true);
     try {
-      const res = await fetch(`http://localhost:3001/api/anime/show/${id}/episodes?page=${page}`);
+      const res = await fetch(`${API}/api/anime/show/${id}/episodes?page=${page}`);
       const data = await res.json();
       if (data.episodes) {
         setEpisodePages((prev) => ({ ...prev, [page]: data.episodes }));

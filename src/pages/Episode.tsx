@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import Nav from '../components/Nav/Nav'
@@ -82,7 +83,7 @@ function Episode() {
     if (!id || !ep) return
     const cacheKey = `${id}-${ep}`
 
-    fetch(`http://localhost:3001/api/anime/show/${id}`)
+    fetch(`${API}/api/anime/show/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setShow({
@@ -125,7 +126,7 @@ function Episode() {
         return
       }
       try {
-        const res = await fetch(`http://localhost:3001/api/anime/show/${id}/episode/${ep}`)
+        const res = await fetch(`${API}/api/anime/show/${id}/episode/${ep}`)
         const data = await res.json()
         if (data.synopsis) {
           synopsisCache[cacheKey] = data.synopsis
@@ -147,7 +148,7 @@ function Episode() {
 
     fetchEpisodeDetail()
 
-    fetch(`http://localhost:3001/api/threads?showId=${id}`)
+    fetch(`${API}/api/threads?showId=${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

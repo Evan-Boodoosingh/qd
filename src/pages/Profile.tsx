@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import Nav from '../components/Nav/Nav'
@@ -77,7 +78,7 @@ function Profile() {
       try {
         setLoading(true)
         setError(null)
-        const res = await fetch(`http://localhost:3001/api/users/profile/${username}`)
+        const res = await fetch(`${API}/api/users/profile/${username}`)
         if (!res.ok) throw new Error('User not found')
         const data = await res.json()
         setProfile(data)
@@ -95,7 +96,7 @@ function Profile() {
 
     const checkFriendStatus = async () => {
       try {
-        const friendsRes = await fetch('http://localhost:3001/api/friends', {
+        const friendsRes = await fetch(`${API}/api/friends`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         const friendsData = await friendsRes.json()
@@ -107,7 +108,7 @@ function Profile() {
           }
         }
 
-        const compatRes = await fetch(`http://localhost:3001/api/friends/compatibility/${username}`, {
+        const compatRes = await fetch(`${API}/api/friends/compatibility/${username}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         const compatData = await compatRes.json()
@@ -124,7 +125,7 @@ function Profile() {
     if (!token) return
     try {
       setFriendRequestLoading(true)
-      const res = await fetch(`http://localhost:3001/api/friends/request/${username}`, {
+      const res = await fetch(`${API}/api/friends/request/${username}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })

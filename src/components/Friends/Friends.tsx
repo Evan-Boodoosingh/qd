@@ -1,3 +1,4 @@
+import API from '../../services/api'
 import { useState, useEffect } from 'react'
 import Nav from '../../components/Nav/Nav'
 import { proxyImage } from '../../services/anime'
@@ -302,11 +303,11 @@ function Friends() {
     const fetchAll = async () => {
       try {
         const [friendsRes, requestsRes, suggestedRes, myListRes, threadsRes] = await Promise.all([
-          fetch('http://localhost:3001/api/friends', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('http://localhost:3001/api/friends/requests', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('http://localhost:3001/api/friends/suggested', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('http://localhost:3001/api/watchlist', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('http://localhost:3001/api/threads'),
+          fetch(`${API}/api/friends`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/friends/requests`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/friends/suggested`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/watchlist`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/threads`),
         ])
 
         const [friendsData, requestsData, suggestedData, myListData, threadsData] = await Promise.all([
@@ -327,7 +328,7 @@ function Friends() {
         const friendsWithWatchlists = await Promise.all(
           friendsList.map(async (friend) => {
             try {
-              const res = await fetch(`http://localhost:3001/api/watchlist/user/${friend._id}`, {
+              const res = await fetch(`${API}/api/watchlist/user/${friend._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
               })
               const watchlist = res.ok ? await res.json() : []
@@ -383,7 +384,7 @@ function Friends() {
   const handleAccept = async (requestId: string) => {
     setRequests(prev => prev.filter(r => r._id !== requestId))
     try {
-      await fetch(`http://localhost:3001/api/friends/request/${requestId}/accept`, {
+      await fetch(`${API}/api/friends/request/${requestId}/accept`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -396,7 +397,7 @@ function Friends() {
   const handleDecline = async (requestId: string) => {
     setRequests(prev => prev.filter(r => r._id !== requestId))
     try {
-      await fetch(`http://localhost:3001/api/friends/request/${requestId}/decline`, {
+      await fetch(`${API}/api/friends/request/${requestId}/decline`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -410,7 +411,7 @@ function Friends() {
     if (!confirm(`Remove ${name} from friends?`)) return
     setFriends(prev => prev.filter(f => f._id !== friendId))
     try {
-      await fetch(`http://localhost:3001/api/friends/${friendId}`, {
+      await fetch(`${API}/api/friends/${friendId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -423,7 +424,7 @@ function Friends() {
   const handleAddSuggested = async (username: string, id: string) => {
     setSentRequests(prev => [...prev, id])
     try {
-      const res = await fetch(`http://localhost:3001/api/friends/request/${username}`, {
+      const res = await fetch(`${API}/api/friends/request/${username}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })

@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -22,7 +23,7 @@ function Register() {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:3001/api/users/register', {
+      const response = await fetch(`${API}/api/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),

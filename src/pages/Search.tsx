@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
 import { proxyImage } from '../services/anime'
@@ -39,9 +40,9 @@ const [query, setQuery] = useState('')
 
       try {
         const [animeRes, usersRes] = await Promise.all([
-          fetch(`http://localhost:3001/api/anime/search?q=${encodeURIComponent(query)}`),
+          fetch(`${API}/api/anime/search?q=${encodeURIComponent(query)}`),
           token
-            ? fetch(`http://localhost:3001/api/users/search?q=${encodeURIComponent(query)}`, {
+            ? fetch(`${API}/api/users/search?q=${encodeURIComponent(query)}`, {
                 headers: { Authorization: `Bearer ${token}` }
               })
             : Promise.resolve(null),

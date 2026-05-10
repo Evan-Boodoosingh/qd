@@ -1,3 +1,4 @@
+import API from '../../services/api'
 import { useState, useEffect } from 'react'
 
 type Friend = {
@@ -55,8 +56,8 @@ function Discussions() {
     const fetchData = async () => {
       try {
         const [friendsRes, threadsRes] = await Promise.all([
-          fetch('http://localhost:3001/api/friends', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('http://localhost:3001/api/threads'),
+          fetch(`${API}/api/friends`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/api/threads`),
         ])
 
         const [friendsData, threadsData] = await Promise.all([

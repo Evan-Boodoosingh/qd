@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Nav from '../components/Nav/Nav'
@@ -45,7 +46,7 @@ function NewThread() {
 
   useEffect(() => {
     if (!selectedShowId) return
-    fetch(`http://localhost:3001/api/anime/show/${selectedShowId}`)
+    fetch(`${API}/api/anime/show/${selectedShowId}`)
       .then(res => res.json())
       .then(data => {
         if (data.genres) setGenres(data.genres)
@@ -59,7 +60,7 @@ function NewThread() {
     const timer = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`http://localhost:3001/api/anime/search?q=${encodeURIComponent(showSearch)}`)
+        const res = await fetch(`${API}/api/anime/search?q=${encodeURIComponent(showSearch)}`)
         const data = await res.json()
         setSearchResults(data.results || [])
         setShowDropdown(true)
@@ -108,7 +109,7 @@ function NewThread() {
     setSubmitting(true)
     setError('')
     try {
-      const response = await fetch('http://localhost:3001/api/threads', {
+      const response = await fetch(`${API}/api/threads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

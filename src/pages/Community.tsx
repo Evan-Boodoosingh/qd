@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from 'react'
 import Nav from '../components/Nav/Nav'
 
@@ -47,7 +48,7 @@ function Community() {
   const isLoggedIn = !!user
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/threads')
+    fetch(`${API}/api/threads`)
       .then(res => res.json())
       .then(data => {
         setThreads(Array.isArray(data) ? data : [])

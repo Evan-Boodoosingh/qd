@@ -1,3 +1,4 @@
+import API from '../services/api'
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import Nav from '../components/Nav/Nav'
@@ -74,7 +75,7 @@ function Thread() {
 
   useEffect(() => {
     if (!id) return
-    fetch(`http://localhost:3001/api/threads/${id}`)
+    fetch(`${API}/api/threads/${id}`)
       .then((res) => res.json())
       .then((data: Thread) => {
         setThread(data)
@@ -108,7 +109,7 @@ function Thread() {
   setThreadLiked(!alreadyLiked)
   setThreadLikeCount(prev => alreadyLiked ? prev - 1 : prev + 1)
   try {
-    await fetch(`http://localhost:3001/api/threads/${id}/like`, {
+    await fetch(`${API}/api/threads/${id}/like`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -122,7 +123,7 @@ const handleReply = async () => {
   if (!replyText.trim() || !token || !id) return
   setSubmitting(true)
   try {
-    const response = await fetch(`http://localhost:3001/api/threads/${id}/replies`, {
+    const response = await fetch(`${API}/api/threads/${id}/replies`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -170,7 +171,7 @@ const handleReply = async () => {
   })
 
   try {
-    await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/like`, {
+    await fetch(`${API}/api/threads/${id}/replies/${replyId}/like`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -188,7 +189,7 @@ const handleReply = async () => {
   if (!token || !id || flaggedReplies.has(replyId)) return
   setFlaggedReplies(prev => new Set(prev).add(replyId))
   try {
-    await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/flag`, {
+    await fetch(`${API}/api/threads/${id}/replies/${replyId}/flag`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -202,7 +203,7 @@ const handleReply = async () => {
   if (!token || !id || reportedReplies.has(replyId)) return
   setReportedReplies(prev => new Set(prev).add(replyId))
   try {
-    await fetch(`http://localhost:3001/api/threads/${id}/replies/${replyId}/report`, {
+    await fetch(`${API}/api/threads/${id}/replies/${replyId}/report`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })
