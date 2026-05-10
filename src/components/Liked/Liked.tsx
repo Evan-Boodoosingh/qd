@@ -25,20 +25,13 @@ type RatedShow = {
   friendNames: string[]
 }
 
-const getInitials = (displayName: string, username: string) => {
-  const name = displayName || username
-  return name.slice(0, 2).toUpperCase()
-}
-
 function Liked() {
   const [ratedShows, setRatedShows] = useState<RatedShow[]>([])
-  const [loading, setLoading] = useState(true)
-
   const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  const [loading, setLoading] = useState(!!token)
 
   useEffect(() => {
     if (!token) {
-      setLoading(false)
       return
     }
 
@@ -54,7 +47,6 @@ function Liked() {
           return
         }
 
-        // Fetch all friends' watchlists in parallel
         const friendsWithWatchlists: FriendWithWatchlist[] = await Promise.all(
           friendsData.map(async (friend: FriendWithWatchlist) => {
             try {
@@ -69,7 +61,6 @@ function Liked() {
           })
         )
 
-        // Build a map of showId -> { show info, friends who rated it }
         const showMap: Record<number, RatedShow> = {}
 
         for (const friend of friendsWithWatchlists) {
@@ -86,7 +77,6 @@ function Liked() {
               }
             }
             showMap[entry.showId].friendNames.push(friendName)
-            // Keep the highest rating
             if (entry.rating > showMap[entry.showId].rating) {
               showMap[entry.showId].rating = entry.rating
             }
@@ -106,15 +96,14 @@ function Liked() {
     }
 
     fetchData()
-  }, [token])
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return null
   if (ratedShows.length === 0) return null
 
   return (
     <div className="border-t border-white/5 py-10">
-      <div className="max-w-6xl mx-auto px-6">
-
+      <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-sm font-medium text-[#f0ede8]">What your nakama are loving</h2>
@@ -128,7 +117,7 @@ function Liked() {
           </span>
         </div>
 
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {ratedShows.map((show) => (
             <div
               key={show.showId}
@@ -151,7 +140,11 @@ function Liked() {
               <div className="p-3 bg-[#1a1815]">
                 <div className="text-[11px] font-medium text-[#f0ede8] truncate mb-1">{show.showName}</div>
                 <div className="text-[10px] text-[#9a9590] mb-1 truncate">
-                  Loved by <span className="text-[#D13924]">{show.friendNames.slice(0, 2).join(', ')}{show.friendNames.length > 2 ? ` +${show.friendNames.length - 2}` : ''}</span>
+                  Loved by{' '}
+                  <span className="text-[#D13924]">
+                    {show.friendNames.slice(0, 2).join(', ')}
+                    {show.friendNames.length > 2 ? ` +${show.friendNames.length - 2}` : ''}
+                  </span>
                 </div>
                 <div className="text-[10px] text-[#9a9590]">
                   ♥ {show.rating}/10 · {show.friendNames.length} {show.friendNames.length === 1 ? 'friend' : 'friends'}
@@ -160,7 +153,6 @@ function Liked() {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   )
