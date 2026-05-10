@@ -173,7 +173,7 @@ function Schedule() {
                 <div className={`text-[11px] font-medium mb-1 ${
                   selectedDay === day ? 'text-[#D13924]' : isToday ? 'text-[#f0ede8]' : 'text-[#9a9590]'
                 }`}>
-                  {day.slice(0, 3)}{isToday ? ' · Today' : ''}
+                 {day.slice(0, 3)}
                 </div>
                 {hasShows && (
                   <div className="flex items-center justify-center">
@@ -189,7 +189,7 @@ function Schedule() {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-sm font-medium text-[#f0ede8]">
-              {selectedDay}{selectedDay === today ? ' · Today' : ''}
+              {selectedDay}
             </h2>
             <div className="flex-1 h-px bg-white/5" />
             <span className="text-[11px] text-[#9a9590]">{showsForDay.length} airing</span>
