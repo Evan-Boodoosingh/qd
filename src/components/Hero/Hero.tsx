@@ -104,7 +104,7 @@ function Hero({ watchedIds = [], onAdded }: Props) {
         <div className="flex-1 min-w-0">
           <div className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-full px-2.5 md:px-3 py-1 md:py-1.5 mb-3 md:mb-5">
             <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-[#D13924] animate-pulse" />
-            Airing now · Spring 2026
+            Airing now
           </div>
 
           <h2
