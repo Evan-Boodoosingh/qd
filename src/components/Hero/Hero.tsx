@@ -89,7 +89,6 @@ function Hero({ watchedIds = [], onAdded }: Props) {
   return (
     <div className="relative h-[320px] md:h-[380px] lg:h-[500px] overflow-hidden bg-[#0f0e0d]">
 
-      {/* Background blur */}
       <img
         src={proxyImage(show.image)}
         alt=""
@@ -97,19 +96,13 @@ function Hero({ watchedIds = [], onAdded }: Props) {
       />
       <div className="absolute inset-0 bg-[#0f0e0d]/60" />
 
-      {/* Content — same layout at all sizes, just scaled */}
       <div className="relative h-full max-w-6xl mx-auto px-4 md:px-6 lg:px-8 flex items-center gap-6 md:gap-10 lg:gap-12 z-10 py-6">
 
-        {/* Left — text */}
         <div className="flex-1 min-w-0">
-          {/* <div className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] text-[#D13924] bg-[#D13924]/10 border border-[#D13924]/25 rounded-full px-2.5 md:px-3 py-1 md:py-1.5 mb-3 md:mb-5">
-            <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-[#D13924] animate-pulse" />
-            Airing now
-          </div> */}
 
           <h2
             onClick={() => window.location.href = `/show/${show.id}`}
-            className="text-xl md:text-3xl lg:text-4xl font-medium text-[#f0ede8] mb-2 md:mb-3 leading-tight cursor-pointer hover:text-[#D13924] transition-all line-clamp-2"
+            className="text-xl md:text-3xl lg:text-4xl font-medium text-[#f0ede8] mb-2 md:mb-3 mt-3 md:mt-5 leading-tight cursor-pointer hover:text-[#D13924] transition-all line-clamp-2"
           >
             {show.title}
           </h2>
@@ -169,7 +162,6 @@ function Hero({ watchedIds = [], onAdded }: Props) {
           </div>
         </div>
 
-        {/* Right — poster */}
         <div className="shrink-0">
           <div
             onClick={() => window.location.href = `/show/${show.id}`}
