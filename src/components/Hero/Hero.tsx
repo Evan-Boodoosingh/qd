@@ -75,7 +75,7 @@ function Hero({ watchedIds = [], onAdded }: Props) {
 
   if (loading) {
     return (
-      <div className="relative h-[320px] md:h-[380px] lg:h-[500px] bg-[#1a1815] flex items-center justify-center">
+      <div className="relative h-[60vh] md:h-[65vh] lg:h-[70vh] bg-[#1a1815] flex items-center justify-center">
         <div className="text-[#9a9590] text-sm animate-pulse">Loading season...</div>
       </div>
     )
@@ -87,7 +87,7 @@ function Hero({ watchedIds = [], onAdded }: Props) {
   const isAdded = watchedIds.includes(show.id)
 
   return (
-    <div className="relative h-[320px] md:h-[380px] lg:h-[500px] overflow-hidden bg-[#0f0e0d]">
+    <div className="relative h-[60vh] md:h-[65vh] lg:h-[70vh] overflow-hidden bg-[#0f0e0d]">
 
       <img
         src={proxyImage(show.image)}
@@ -96,30 +96,30 @@ function Hero({ watchedIds = [], onAdded }: Props) {
       />
       <div className="absolute inset-0 bg-[#0f0e0d]/60" />
 
-      <div className="relative h-full max-w-6xl mx-auto px-4 md:px-6 lg:px-8 flex items-center gap-6 md:gap-10 lg:gap-12 z-10 py-6">
+      <div className="relative h-full max-w-6xl mx-auto px-4 md:px-6 lg:px-8 flex items-center gap-6 md:gap-10 lg:gap-12 z-10 py-8">
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
 
           <h2
             onClick={() => window.location.href = `/show/${show.id}`}
-            className="text-xl md:text-3xl lg:text-4xl font-medium text-[#f0ede8] mb-2 md:mb-3 mt-3 md:mt-5 leading-tight cursor-pointer hover:text-[#D13924] transition-all line-clamp-2"
+            className="text-2xl md:text-3xl lg:text-5xl font-medium text-[#f0ede8] mb-2 md:mb-3 leading-tight cursor-pointer hover:text-[#D13924] transition-all line-clamp-2"
           >
             {show.title}
           </h2>
 
           <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4 flex-wrap">
-            <span className="text-[11px] md:text-[12px] text-[#c8c4be]">{show.genres.slice(0, 2).join(' · ')}</span>
-            <span className="text-[10px] md:text-[11px] text-[#D13924] bg-[#D13924]/10 px-2 py-0.5 rounded border border-[#D13924]/20">
+            <span className="text-[11px] md:text-[13px] text-[#c8c4be]">{show.genres.slice(0, 2).join(' · ')}</span>
+            <span className="text-[10px] md:text-[12px] text-[#D13924] bg-[#D13924]/10 px-2 py-0.5 rounded border border-[#D13924]/20">
               {show.day}
             </span>
-            <span className="text-[11px] md:text-[12px] text-[#9a9590]">♥ {show.score}</span>
+            <span className="text-[11px] md:text-[13px] text-[#9a9590]">♥ {show.score}</span>
           </div>
 
-          <p className="hidden lg:block text-[13px] text-[#9a9590] leading-relaxed mb-8 line-clamp-3 max-w-lg">
+          <p className="hidden md:block text-[13px] lg:text-[14px] text-[#9a9590] leading-relaxed mb-6 line-clamp-3 max-w-lg">
             {show.synopsis}
           </p>
 
-          <div className="flex gap-2 md:gap-3 mb-6 md:mb-10">
+          <div className="flex gap-2 md:gap-3 mb-6 md:mb-8">
             {isLoggedIn ? (
               <button
                 onClick={(e) => handleAddToList(e, show)}
@@ -160,12 +160,13 @@ function Hero({ watchedIds = [], onAdded }: Props) {
               />
             ))}
           </div>
+
         </div>
 
         <div className="shrink-0">
           <div
             onClick={() => window.location.href = `/show/${show.id}`}
-            className="w-[120px] h-[170px] md:w-[190px] md:h-[270px] lg:w-[260px] lg:h-[370px] rounded-xl overflow-hidden shadow-2xl cursor-pointer hover:opacity-90 transition-all"
+            className="w-[130px] h-[185px] md:w-[200px] md:h-[285px] lg:w-[280px] lg:h-[400px] rounded-xl overflow-hidden shadow-2xl cursor-pointer hover:opacity-90 transition-all"
           >
             <img
               src={proxyImage(show.image)}
